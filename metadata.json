@@ -1,0 +1,6 @@
+{
+  "name": "Yoruba LLM Suite",
+  "description": "An interactive suite for Yoruba LLM development, data collection, fine-tuning, vocabulary generation, and evaluation.",
+  "requestFramePermissions": [],
+  "majorCapabilities": ["MAJOR_CAPABILITY_SERVER_SIDE_GEMINI_API"]
+}
