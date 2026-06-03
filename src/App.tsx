@@ -46,8 +46,38 @@ import {
 } from "./templates";
 
 export default function App() {
-  // Navigation tabs
+  // Router view state support: landing page vs admin console
+  const [viewMode, setViewMode] = useState<"landing" | "admin">("landing");
+
+  // Navigation tabs for /admin
   const [activeTab, setActiveTab] = useState<"architecture" | "cleaning" | "dataset" | "evaluation" | "chat" | "ecosystem">("architecture");
+
+  // Synchronize hash paths for clear routing
+  useEffect(() => {
+    const handleHashChange = () => {
+      const hash = window.location.hash;
+      const search = window.location.search;
+      if (hash === "#/admin" || search.includes("admin") || window.location.pathname.includes("/admin")) {
+        setViewMode("admin");
+      } else {
+        setViewMode("landing");
+      }
+    };
+
+    handleHashChange();
+    window.addEventListener("hashchange", handleHashChange);
+    return () => window.removeEventListener("hashchange", handleHashChange);
+  }, []);
+
+  const handleGoToAdmin = () => {
+    setViewMode("admin");
+    window.location.hash = "/admin";
+  };
+
+  const handleGoToLanding = () => {
+    setViewMode("landing");
+    window.location.hash = "/";
+  };
 
   // Hyperparameters for Fine-Tuning LoRA
   const [hyperparams, setHyperparams] = useState<Hyperparams>(getDefaultHyperparams());
@@ -69,6 +99,16 @@ export default function App() {
   const [ecoTextMetrics, setEcoTextMetrics] = useState<any | null>(null);
   const [ecoTextLoading, setEcoTextLoading] = useState<boolean>(false);
   const [ecoTextError, setEcoTextError] = useState<string | null>(null);
+
+  // MVP Roadmap Chatbot simulation state
+  const [mvpChatHistory, setMvpChatHistory] = useState<Array<{ role: "user" | "bot"; text: string }>>([
+    { role: "user", text: "Báwo ni ọjọ́ rẹ ṣe rí?" },
+    { role: "bot", text: "Ọjọ́ mi dáa gan-an. Báwo ni tirẹ?" },
+    { role: "user", text: "Kí ni olú-ilu Nàìjíríà?" },
+    { role: "bot", text: "Abuja ni olú-ilu Nàìjíríà." }
+  ]);
+  const [mvpChatInput, setMvpChatInput] = useState<string>("");
+  const [mvpChatLoading, setMvpChatLoading] = useState<boolean>(false);
 
   // Web Scraping & Cleaning State
   const [rawText, setRawText] = useState<string>("E ku abo si ilu Ibadan, se alafia le wa? Afe lati ko bi a se n gbin koko.");
@@ -469,6 +509,34 @@ export default function App() {
     }
   };
 
+  const handleMvpHourlyChat = async (customPrompt?: string) => {
+    const textToSend = customPrompt || mvpChatInput;
+    if (!textToSend.trim()) return;
+
+    const newHistory = [...mvpChatHistory, { role: "user" as const, text: textToSend }];
+    setMvpChatHistory(newHistory);
+    setMvpChatInput("");
+    setMvpChatLoading(true);
+
+    try {
+      const response = await fetch("/api/yoruballama/simulate", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ prompt: textToSend, temperature: 0.4 })
+      });
+      const data = await response.json();
+      if (data.success) {
+        setMvpChatHistory([...newHistory, { role: "bot" as const, text: data.response }]);
+      } else {
+        setMvpChatHistory([...newHistory, { role: "bot" as const, text: "Èsì kò rọrùn láti gba (Could not generate response)." }]);
+      }
+    } catch (err: any) {
+      setMvpChatHistory([...newHistory, { role: "bot" as const, text: `Àṣìṣe ìpèsè ìṣẹ́mọ́le (Network error): ${err.message}` }]);
+    } finally {
+      setMvpChatLoading(false);
+    }
+  };
+
   return (
     <div className="bg-[#F2F2F0] min-h-screen text-[#1A1A1A] font-sans antialiased flex flex-col p-4 md:p-8 selection:bg-yellow-300 selection:text-black">
       {/* Outer brutalist frame */}
@@ -581,7 +649,10 @@ export default function App() {
           
           {/* TAB 1: ARCHITECTURE & LORA PARAMS */}
           {activeTab === "architecture" && (
-            <div className="grid grid-cols-1 lg:grid-cols-12 divide-y-[4px] lg:divide-y-0 lg:divide-x-[4px] divide-[#1A1A1A]">
+            <div className="flex flex-col divide-y-[4px] divide-[#1A1A1A]">
+              
+              {/* Top Configuration Columns Split */}
+              <div className="grid grid-cols-1 lg:grid-cols-12 divide-y-[4px] lg:divide-y-0 lg:divide-x-[4px] divide-[#1A1A1A]">
               
               {/* Left Column: Parameter controls */}
               <div className="lg:col-span-4 p-6 flex flex-col bg-[#F9F9F7] justify-between">
@@ -903,6 +974,215 @@ export default function App() {
                 </div>
               </div>
             </div>
+
+            {/* STARTUP MVP ROADMAP & ROADPLAY DEMO */}
+            <div className="p-6 bg-[#FAF9F5] border-t-4 border-black">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                
+                {/* Left part: Strategy card & Phases */}
+                <div className="xl:col-span-7 flex flex-col justify-between">
+                  <div>
+                    <div className="flex items-center gap-1.5 mb-2">
+                      <span className="w-2 h-2 bg-yellow-400 border border-black"></span>
+                      <h3 className="text-xs font-black uppercase tracking-[0.2em] py-1 border-b-2 border-black inline-block text-black">
+                        04. YORUBA AI STARTUP MVP STRATEGY ROADMAP
+                      </h3>
+                    </div>
+                    <p className="text-sm text-gray-700 leading-relaxed mb-4">
+                      Building a custom West African language model from scratch is highly capital intensive. Our recommended startup strategy is to fine-tune existing foundation models (such as <strong>Qwen-3B</strong>, <strong>Llama-8B</strong>, or <strong>YorubaLlama</strong>) natively on specialized domain-specific datasets to launch high-performance lean products.
+                    </p>
+
+                    <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                      {/* Phase 1 */}
+                      <div className="border-4 border-black p-4 bg-white shadow-[4px_4px_0px_#1A1A1A]">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="bg-yellow-400 text-black text-[10px] font-mono font-bold px-1.5 py-0.5 border-2 border-black">PHASE 1 (MVP)</span>
+                          <h4 className="text-xs font-black uppercase">Yoruba Chatbot</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Fine-tune on conversational script pairs, literature, news, proverbs, and grammar databases. Chat interactive models learn custom tone mapping and contextual dialect values.
+                        </p>
+                        <div className="mt-2 text-[10px] font-mono font-bold text-gray-400 uppercase">
+                          Standard core chatbot MVP
+                        </div>
+                      </div>
+
+                      {/* Phase 2 */}
+                      <div className="border-4 border-black p-4 bg-white shadow-[4px_4px_0px_#A3A3A3]">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="bg-purple-600 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 border-2 border-black">PHASE 2</span>
+                          <h4 className="text-xs font-black uppercase">Translation Engine</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Deliver bidirectional English ↔ Yoruba translations optimized for diacritics. Serve as API proxies or embeddable browser blocks for corporations.
+                        </p>
+                        <div className="mt-2 text-[10px] font-mono font-bold text-gray-400 uppercase">
+                          Interactive web & app SaaS
+                        </div>
+                      </div>
+
+                      {/* Phase 3 */}
+                      <div className="border-4 border-black p-4 bg-white shadow-[4px_4px_0px_#A3A3A3]">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="bg-emerald-600 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 border-2 border-black">PHASE 3</span>
+                          <h4 className="text-xs font-black uppercase">Voice Assistant</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Integrate native acoustic Whisper speech models with customized tone sound synthesis. Broadens accessibility to older or non-literate communities.
+                        </p>
+                        <div className="mt-2 text-[10px] font-mono font-bold text-gray-400 uppercase">
+                          Voice-enabled smart system
+                        </div>
+                      </div>
+
+                      {/* Phase 4 */}
+                      <div className="border-4 border-black p-4 bg-white shadow-[4px_4px_0px_#A3A3A3]">
+                        <div className="flex items-center gap-1.5 mb-2">
+                          <span className="bg-orange-500 text-white text-[10px] font-mono font-bold px-1.5 py-0.5 border-2 border-black">PHASE 4</span>
+                          <h4 className="text-xs font-black uppercase">Industrial Tutors / CS</h4>
+                        </div>
+                        <p className="text-xs text-gray-600 leading-relaxed">
+                          Provide smart virtual school tutors who guide dialect tone patterns, or automated customer service portals for banks and businesses.
+                        </p>
+                        <div className="mt-2 text-[10px] font-mono font-bold text-gray-400 uppercase">
+                          Targeted Enterprise SaaS
+                        </div>
+                      </div>
+                    </div>
+                  </div>
+
+                  <div className="mt-3 text-[10px] font-mono text-gray-500 leading-relaxed bg-[#FAF9F5] border border-gray-300 p-2.5">
+                    💡 <strong>Economic Fact:</strong> Fine-tuning a 3-billion to 8-billion parameter base weights is 90% cheaper and faster than pre-training a raw model from scratch, and can achieve higher accuracy on domain-bound tasks with clean data.
+                  </div>
+                </div>
+
+                {/* Right part: Live Chatbot Emulation Sandbox */}
+                <div className="xl:col-span-5 flex flex-col justify-between">
+                  <div className="border-4 border-black p-5 bg-white shadow-[6px_6px_0px_#1A1A1A] h-full flex flex-col justify-between space-y-4">
+                    <div>
+                      {/* Live header */}
+                      <div className="flex items-center justify-between pb-3 border-b-2 border-dashed border-gray-400">
+                        <div className="flex items-center gap-2">
+                          <span className="w-2 h-2 rounded-full bg-emerald-500 animate-ping"></span>
+                          <span className="bg-black text-white px-2 py-0.5 text-[9px] font-mono font-black uppercase">YORUBA CHATBOT MVP DEMO</span>
+                        </div>
+                        <span className="text-[9px] font-mono font-bold text-gray-500 uppercase">STATUS: ACTIVE</span>
+                      </div>
+
+                      <p className="text-xs text-gray-600 mt-3 mb-2 leading-tight">
+                        Explore core conversational MVP scenarios. Tap a benchmark prompt or enter custom Yoruba inputs below to simulate dynamic responses:
+                      </p>
+
+                      {/* Quick playbacks */}
+                      <div className="flex flex-wrap gap-1.5 mb-3">
+                        <button
+                          onClick={() => {
+                            setMvpChatHistory([
+                              ...mvpChatHistory,
+                              { role: "user", text: "Báwo ni ọjọ́ rẹ ṣe rí?" },
+                              { role: "bot", text: "Ọjọ́ mi dáa gan-an. Báwo ni tirẹ?" }
+                            ]);
+                          }}
+                          className="bg-neutral-50 hover:bg-neutral-150 border border-black text-[9px] font-mono font-bold px-2 py-1 rounded-sm shadow-[2px_2px_0px_#1A1A1A] transition-all cursor-pointer"
+                        >
+                          ☀️ "Báwo ni..."
+                        </button>
+                        
+                        <button
+                          onClick={() => {
+                            setMvpChatHistory([
+                              ...mvpChatHistory,
+                              { role: "user", text: "Kí ni olú-ilu Nàìjíríà?" },
+                              { role: "bot", text: "Abuja ni olú-ilu Nàìjíríà." }
+                            ]);
+                          }}
+                          className="bg-neutral-50 hover:bg-neutral-150 border border-black text-[9px] font-mono font-bold px-2 py-1 rounded-sm shadow-[2px_2px_0px_#1A1A1A] transition-all cursor-pointer"
+                        >
+                          🇳🇬 "Kí ni olú-ilu..."
+                        </button>
+
+                        <button
+                          onClick={() => {
+                            setMvpChatHistory([
+                              ...mvpChatHistory,
+                              { role: "user", text: "Kọ́ mi ní òwe kan lórí ọ̀pọ̀lọpọ̀ ọgbọ́n." },
+                              { role: "bot", text: "Òwe: ‘Kò sí fùrò tí kò nípò; ọgbọ́n dunjú ju agbára lọ.’ Ìtúmọ̀: No individual is completely useless; wisdom is more impactful than sheer strength." }
+                            ]);
+                          }}
+                          className="bg-neutral-50 hover:bg-neutral-150 border border-black text-[9px] font-mono font-bold px-2 py-1 rounded-sm shadow-[2px_2px_0px_#1A1A1A] transition-all cursor-pointer"
+                        >
+                          🦉 Proverb Playback
+                        </button>
+                      </div>
+
+                      {/* Chat screen */}
+                      <div className="border-[3px] border-black h-48 overflow-y-auto p-3 bg-[#F9F9F7] font-mono text-[10.5px] leading-relaxed space-y-3.5 shadow-inner">
+                        {mvpChatHistory.map((msg, index) => (
+                          <div key={index} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                            <span className={`text-[8px] uppercase tracking-wider font-bold mb-0.5 ${msg.role === "user" ? "text-blue-700" : "text-amber-800"}`}>
+                              {msg.role === "user" ? "● User Prompt" : "🤖 Yoruba-Bot MVP"}
+                            </span>
+                            <div className={`px-2.5 py-1.5 border border-black max-w-[85%] rounded-none ${
+                              msg.role === "user" 
+                                ? "bg-blue-100 text-blue-950 font-bold ml-4 shadow-[1.5px_1.5px_0px_#1D4ED8]" 
+                                : "bg-amber-100 text-amber-950 mr-4 shadow-[1.5px_1.5px_0px_#92400E]"
+                            }`}>
+                              {msg.text}
+                            </div>
+                          </div>
+                        ))}
+                        
+                        {mvpChatLoading && (
+                          <div className="flex items-center gap-1 text-gray-500 italic text-[9px] animate-pulse">
+                            <span className="w-1.5 h-1.5 rounded-full bg-gray-500 animate-bounce"></span>
+                            <span>YorubaGPT processing tone alignments...</span>
+                          </div>
+                        )}
+                      </div>
+                    </div>
+
+                    {/* Chat Input form */}
+                    <div>
+                      <div className="flex gap-2">
+                        <input
+                          type="text"
+                          value={mvpChatInput}
+                          onChange={(e) => setMvpChatInput(e.target.value)}
+                          onKeyDown={(e) => {
+                            if (e.key === "Enter" && !mvpChatLoading) {
+                              handleMvpHourlyChat();
+                            }
+                          }}
+                          placeholder="Type or translate in Yoruba..."
+                          className="flex-1 min-w-0 border-2 border-black px-3 py-1.5 text-xs font-mono bg-[#F9F9F7]"
+                          disabled={mvpChatLoading}
+                        />
+                        <button
+                          onClick={() => handleMvpHourlyChat()}
+                          disabled={mvpChatLoading || !mvpChatInput.trim()}
+                          className="bg-black hover:bg-neutral-800 text-white px-3 py-1.5 border-2 border-black text-[10px] font-black uppercase cursor-pointer disabled:opacity-40"
+                        >
+                          Send
+                        </button>
+                      </div>
+                      <div className="flex justify-between items-center mt-2 font-mono text-[9px]">
+                        <span className="text-gray-400">⚡ Emulating fine-tuned model outputs</span>
+                        <button
+                          onClick={() => setMvpChatHistory([])}
+                          className="text-red-700 hover:underline font-bold"
+                        >
+                          Reset Game
+                        </button>
+                      </div>
+                    </div>
+
+                  </div>
+                </div>
+
+              </div>
+            </div>
+
+          </div>
           )}
 
           {/* TAB 2: DATA COLLECTION, ACCENTS & NFC NORMALIZATION */}
