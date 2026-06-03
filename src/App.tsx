@@ -538,21 +538,430 @@ export default function App() {
   };
 
   return (
-    <div className="bg-[#F2F2F0] min-h-screen text-[#1A1A1A] font-sans antialiased flex flex-col p-4 md:p-8 selection:bg-yellow-300 selection:text-black">
-      {/* Outer brutalist frame */}
-      <div className="border-[8px] md:border-[12px] border-[#1A1A1A] bg-white flex flex-col shadow-[16px_16px_0px_#1A1A1A] overflow-hidden">
-        
-        {/* Header Block */}
-        <header className="border-b-[4px] border-[#1A1A1A] p-6 bg-white flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6">
-          <div className="flex-1">
-            <div className="flex items-center gap-2 mb-2">
-              <span className="text-xs font-mono font-black tracking-widest uppercase bg-black text-white px-2.5 py-0.5 rounded-sm">
-                PROJECT PIPELINE PROTOCOL v2.1
-              </span>
-              <span className="text-xs font-mono font-black tracking-widest uppercase bg-yellow-400 border border-black text-[#1A1A1A] px-2.5 py-0.5 rounded-sm">
-                STABLE
-              </span>
+    <div className={`min-h-screen font-sans antialiased flex flex-col selection:bg-amber-400 selection:text-amber-950 ${
+      viewMode === "landing" ? "bg-[#FAF7F2] text-[#201A15] p-4 md:p-8" : "bg-[#F2F2F0] text-[#1A1A1A] p-4 md:p-8"
+    }`}>
+      {viewMode === "landing" ? (
+        /* GORGEOUS AFROCENTRIC LANDING PAGE */
+        <div id="landing_page" className="border-[6px] md:border-[10px] border-[#5C2E0B] bg-[#FDFBF7] flex flex-col shadow-[12px_12px_0px_#5C2E0B] overflow-hidden transition-all duration-300">
+          
+          {/* Top Weave Accent */}
+          <div className="flex select-none h-4 border-b-2 border-[#5C2E0B] overflow-hidden bg-amber-500">
+            {Array.from({ length: 48 }).map((_, i) => (
+              <div
+                key={i}
+                className={`flex-1 h-full rotate-45 transform scale-150 border-r border-[#5C2E0B]/20 ${
+                  i % 3 === 0 ? "bg-[#7C2D12]" : i % 3 === 1 ? "bg-[#B45309]" : "bg-[#FBBF24]"
+                }`}
+              />
+            ))}
+          </div>
+
+          {/* Header */}
+          <header className="border-b-[4px] border-[#5C2E0B] p-6 md:p-8 bg-[#FAF6F0] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
+            <div>
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-[10px] font-mono font-black tracking-widest uppercase bg-[#5C2E0B] text-[#FAF6F0] px-2.5 py-0.5">
+                  RESEARCH INITIATIVE
+                </span>
+                <span className="text-[10px] font-mono font-black tracking-widest uppercase bg-amber-500 text-black px-2.5 py-0.5">
+                  NIGER-CONGO BILINGUAL MVP
+                </span>
+              </div>
+              <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tight uppercase text-[#3D1E04] flex items-center gap-2">
+                ÀṢÀ LLM
+              </h1>
+              <p className="font-serif italic text-lg text-[#5C2E0B]/80 mt-1">
+                Preserving Yoruba heritage, tone-composition, and linguistic correctness via open-source adapter tuning.
+              </p>
             </div>
+            
+            <div className="flex flex-wrap gap-3">
+              <button
+                onClick={() => {
+                  window.location.hash = "#/admin";
+                  setViewMode("admin");
+                }}
+                className="bg-[#B45309] hover:bg-[#9A3412] text-[#FAF6F0] px-5 py-2.5 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider transition-all shadow-[4px_4px_0px_#5C2E0B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#5C2E0B] cursor-pointer"
+              >
+                Launch Developer Console ↗
+              </button>
+            </div>
+          </header>
+
+          {/* Hero Section */}
+          <div className="grid grid-cols-1 lg:grid-cols-12 divide-y-[4px] lg:divide-y-0 lg:divide-x-[4px] divide-[#5C2E0B] border-b-[4px] border-[#5C2E0B]">
+            {/* Left side: narrative */}
+            <div className="lg:col-span-7 p-6 md:p-8 bg-[#FDFAF5] flex flex-col justify-between">
+              <div className="space-y-6">
+                <div>
+                  <h2 className="text-2xl md:text-3xl font-black uppercase text-[#3D1E04] tracking-tight mb-2">
+                    Linguistic Philosophy & Adaptor Design
+                  </h2>
+                  <div className="w-16 h-1 bg-[#B45309]" />
+                </div>
+
+                <p className="text-sm md:text-base text-[#4A321B] leading-relaxed">
+                  Yoruba is a tonal West African language of 45+ million speakers. Tone modifiers (High <code className="bg-amber-100 px-1 font-mono">á</code>, Low <code className="bg-amber-100 px-1 font-mono">à</code>, Mid unmarked) are not optional ornaments—they dictate core semantic dictionaries. For instance, removing accents transforms the sentence entirely, forcing human readers to guess lexical intent.
+                </p>
+
+                <div className="bg-[#FAF6F0] border-2 border-[#5C2E0B] p-4 font-mono text-xs text-[#5C2E0B] space-y-2 shadow-[4px_4px_0px_rgba(92,46,11,0.15)]">
+                  <div className="font-bold border-b border-[#5C2E0B]/30 pb-1 uppercase text-[#3D1E04]">
+                    The Yoruba "AWO" Tone Quadruplet
+                  </div>
+                  <div className="grid grid-cols-2 gap-2">
+                    <div>🔊 <span className="font-bold text-[#B45309]">àwò</span> (color / pattern)</div>
+                    <div>🔊 <span className="font-bold text-[#B45309]">awó</span> (guinea fowl)</div>
+                    <div>🔊 <span className="font-bold text-[#B45309]">awo</span> (clay plate)</div>
+                    <div>🔊 <span className="font-bold text-[#B45309]">awọ́</span> (secret / cult)</div>
+                  </div>
+                </div>
+
+                <p className="text-sm text-[#4A321B] leading-relaxed">
+                  Standard tokenizers fragment accented glyphs under Unicode NFD formats, creating duplicate sub-words that dilute transformer focus weights. Àṣà LLM implements full-spectrum NFC composition preprocessing, compiling token points prior to training 4-bit LoRA adapters on base Qwen or Llama weights.
+                </p>
+
+                <div className="grid grid-cols-1 md:grid-cols-2 gap-4 pt-2">
+                  <div className="p-4 border border-[#5C2E0B]/40 bg-[#FFFDFB]">
+                    <span className="font-mono text-xs text-amber-700 font-bold">01. PRE-TRAINED COMPONENT</span>
+                    <h4 className="text-xs font-black uppercase mt-1 mb-1 text-[#3D1E04]">Jacaranda YorubaLlama</h4>
+                    <p className="text-[11px] text-[#4A321B]/85">
+                      Leverages South Africa's high-performance bilingual Jacaranda embeddings under 7B/8B parameter weights.
+                    </p>
+                  </div>
+                  <div className="p-4 border border-[#5C2E0B]/40 bg-[#FFFDFB]">
+                    <span className="font-mono text-xs text-amber-700 font-bold">02. COMPILATION FRAME</span>
+                    <h4 className="text-xs font-black uppercase mt-1 mb-1 text-[#3D1E04]">Yorubaname & YorubaGPT</h4>
+                    <p className="text-[11px] text-[#4A321B]/85">
+                      Structured conversational datasets tracking West African news, proverbs, and custom user dialogue.
+                    </p>
+                  </div>
+                </div>
+              </div>
+
+              <div className="mt-8 border-t border-[#5C2E0B]/20 pt-4 flex items-center justify-between font-mono text-[10px] text-amber-800">
+                <span>📚 100% Capital-Sourced Open Corpus</span>
+                <span>⚡ NFC Normalization Active</span>
+              </div>
+            </div>
+
+            {/* Right side: Interactive Sandbox */}
+            <div className="lg:col-span-5 p-6 md:p-8 bg-[#FAF6F0] flex flex-col justify-between">
+              <div className="border-4 border-[#5C2E0B] p-5 bg-white shadow-[6px_6px_0px_#5C2E0B] h-full flex flex-col justify-between space-y-4">
+                <div>
+                  <div className="flex items-center justify-between pb-3 border-b-2 border-dashed border-[#5C2E0B]/40">
+                    <div className="flex items-center gap-2">
+                      <span className="w-2.5 h-2.5 rounded-full bg-amber-600 animate-ping"></span>
+                      <span className="bg-[#5C2E0B] text-white px-2 py-0.5 text-[10px] font-mono font-black uppercase">
+                        YORUBA CHATBOT MVP SANDBOX
+                      </span>
+                    </div>
+                    <span className="text-[9px] font-mono font-black text-amber-700">STATUS: ACTIVE</span>
+                  </div>
+
+                  <p className="text-xs text-[#5C2E0B] mt-3 mb-2 font-medium">
+                    Test the Phase 1 MVP model. Tap a seed prompt or enter custom Yoruba dialogue to explore the fine-tuned tone-mapping:
+                  </p>
+
+                  {/* Seed Prompts */}
+                  <div className="flex flex-wrap gap-1.5 mb-3">
+                    <button
+                      onClick={() => {
+                        setMvpChatHistory([
+                          ...mvpChatHistory,
+                          { role: "user", text: "Báwo ni ọjọ́ rẹ ṣe rí?" },
+                          { role: "bot", text: "Ọjọ́ mi dáa gan-an. Báwo ni tirẹ?" }
+                        ]);
+                      }}
+                      className="bg-[#FDFAF5] hover:bg-amber-100 border border-[#5C2E0B] text-[9.5px] font-mono font-bold px-2 py-1 transition-all cursor-pointer shadow-[2px_2px_0px_#5C2E0B]"
+                    >
+                      ☀️ "Báwo ni..."
+                    </button>
+                    
+                    <button
+                      onClick={() => {
+                        setMvpChatHistory([
+                          ...mvpChatHistory,
+                          { role: "user", text: "Kí ni olú-ilu Nàìjíríà?" },
+                          { role: "bot", text: "Abuja ni olú-ilu Nàìjíríà dídùn." }
+                        ]);
+                      }}
+                      className="bg-[#FDFAF5] hover:bg-amber-100 border border-[#5C2E0B] text-[9.5px] font-mono font-bold px-2 py-1 transition-all cursor-pointer shadow-[2px_2px_0px_#5C2E0B]"
+                    >
+                      🇳🇬 "Kí ni olú-ilu..."
+                    </button>
+
+                    <button
+                      onClick={() => {
+                        setMvpChatHistory([
+                          ...mvpChatHistory,
+                          { role: "user", text: "Kọ́ mi ní òwe lórí ọgbọ́n." },
+                          { role: "bot", text: "Òwe: ‘Kò sí fùrò tí kò nípò; ọgbọ́n dunjú ju agbára lọ.’ Ìtúmọ̀: No individual is completely useless; wisdom is more impactful than sheer strength." }
+                        ]);
+                      }}
+                      className="bg-[#FDFAF5] hover:bg-amber-100 border border-[#5C2E0B] text-[9.5px] font-mono font-bold px-2 py-1 transition-all cursor-pointer shadow-[2px_2px_0px_#5C2E0B]"
+                    >
+                      🦉 Proverb Playback
+                    </button>
+                  </div>
+
+                  {/* Interactive Sandbox Messages */}
+                  <div className="border-2 border-[#5C2E0B] h-48 overflow-y-auto p-3 bg-[#FAF8F5] font-mono text-[11px] leading-relaxed space-y-3 shadow-inner">
+                    {mvpChatHistory.length === 0 ? (
+                      <div className="text-gray-400 italic text-[10px] flex items-center justify-center h-full text-center p-4">
+                        Sandbox is empty. Click a seed prompt above or send a message to start dialogue emulation.
+                      </div>
+                    ) : (
+                      mvpChatHistory.map((msg, index) => (
+                        <div key={index} className={`flex flex-col ${msg.role === "user" ? "items-end" : "items-start"}`}>
+                          <span className={`text-[8px] uppercase tracking-wider font-bold mb-0.5 ${msg.role === "user" ? "text-amber-800" : "text-[#7C2D12]"}`}>
+                            {msg.role === "user" ? "● User Prompt" : "🤖 Yoruba-Bot MVP"}
+                          </span>
+                          <div className={`px-2.5 py-1.5 border border-[#5C2E0B] rounded-none ${
+                            msg.role === "user" 
+                              ? "bg-amber-100 text-amber-950 font-bold ml-4 shadow-[1.5px_1.5px_0px_#5C2E0B]" 
+                              : "bg-orange-100 text-[#2C1D11] mr-4 shadow-[1.5px_1.5px_0px_#7C2D12]"
+                          }`}>
+                            {msg.text}
+                          </div>
+                        </div>
+                      ))
+                    )}
+                    
+                    {mvpChatLoading && (
+                      <div className="flex items-center gap-1 text-amber-800 italic text-[9px] animate-pulse">
+                        <span className="w-1.5 h-1.5 rounded-full bg-amber-800 animate-bounce"></span>
+                        <span>Compiling tone diacritics...</span>
+                      </div>
+                    )}
+                  </div>
+                </div>
+
+                {/* Input fields */}
+                <div>
+                  <div className="flex gap-2">
+                    <input
+                      type="text"
+                      value={mvpChatInput}
+                      onChange={(e) => setMvpChatInput(e.target.value)}
+                      onKeyDown={(e) => {
+                        if (e.key === "Enter" && !mvpChatLoading) {
+                          handleMvpHourlyChat();
+                        }
+                      }}
+                      placeholder="Type custom Yoruba text..."
+                      className="flex-1 min-w-0 border-2 border-[#5C2E0B] px-3 py-1.5 text-xs font-mono bg-white"
+                      disabled={mvpChatLoading}
+                    />
+                    <button
+                      onClick={() => handleMvpHourlyChat()}
+                      disabled={mvpChatLoading || !mvpChatInput.trim()}
+                      className="bg-[#5C2E0B] hover:bg-[#3D1E04] text-white px-3 py-1.5 border-2 border-[#5C2E0B] text-[10px] font-black uppercase cursor-pointer disabled:opacity-40"
+                    >
+                      Send
+                    </button>
+                  </div>
+                  <div className="flex justify-between items-center mt-2 font-mono text-[9px]">
+                    <span className="text-gray-400">⚡ Emulating fine-tuned model outputs</span>
+                    <button
+                      onClick={() => setMvpChatHistory([])}
+                      className="text-red-700 hover:underline font-bold"
+                    >
+                      Clear
+                    </button>
+                  </div>
+                </div>
+
+              </div>
+            </div>
+          </div>
+
+          {/* Current Available Features (Bento Grid) */}
+          <div className="p-6 md:p-8 bg-[#FCFAF5] border-b-[4px] border-[#5C2E0B]">
+            <div className="mb-6">
+              <span className="text-xs font-mono font-bold uppercase text-amber-700">TECHNICAL SUITE</span>
+              <h3 className="text-xl md:text-2xl font-black uppercase text-[#3D1E04]">
+                Available Pipeline Features
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-4 gap-6">
+              {/* Feature 1 */}
+              <div className="border border-[#5C2E0B] p-5 bg-white shadow-[4px_4px_0px_rgba(92,46,11,0.1)] flex flex-col justify-between">
+                <div>
+                  <div className="aspect-square w-8 bg-amber-500/10 border border-[#5C2E0B] flex items-center justify-center font-mono font-bold text-xs text-[#5C2E0B] mb-3">
+                    01
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-[#3D1E04] mb-2">NFC Composition</h4>
+                  <p className="text-xs text-[#4A321B]/90 leading-relaxed font-sans">
+                    Resolves scattered Unicode diacritic glyphs into single consolidated UTF-8 characters prior to tokenizer matrix ingestion.
+                  </p>
+                </div>
+                <div className="mt-4 text-[9px] font-mono text-amber-700 uppercase font-black">
+                  • Interactive playground live
+                </div>
+              </div>
+
+              {/* Feature 2 */}
+              <div className="border border-[#5C2E0B] p-5 bg-white shadow-[4px_4px_0px_rgba(92,46,11,0.1)] flex flex-col justify-between">
+                <div>
+                  <div className="aspect-square w-8 bg-amber-500/10 border border-[#5C2E0B] flex items-center justify-center font-mono font-bold text-xs text-[#5C2E0B] mb-3">
+                    02
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-[#3D1E04] mb-2">Fine-Tuning Lab</h4>
+                  <p className="text-xs text-[#4A321B]/90 leading-relaxed font-sans">
+                    Set specific learning rates, target adapter values, LoRA scaling factor ($\alpha$), and download customized training launch script configurations.
+                  </p>
+                </div>
+                <div className="mt-4 text-[9px] font-mono text-amber-700 uppercase font-black">
+                  • 4-Bit parameters defined
+                </div>
+              </div>
+
+              {/* Feature 3 */}
+              <div className="border border-[#5C2E0B] p-5 bg-white shadow-[4px_4px_0px_rgba(92,46,11,0.1)] flex flex-col justify-between">
+                <div>
+                  <div className="aspect-square w-8 bg-amber-500/10 border border-[#5C2E0B] flex items-center justify-center font-mono font-bold text-xs text-[#5C2E0B] mb-3">
+                    03
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-[#3D1E04] mb-2">Alpaca Synthesizer</h4>
+                  <p className="text-xs text-[#4A321B]/90 leading-relaxed font-sans">
+                    Edit and output bilingual JSON schema pairs matching open-source Yoruba name training matrices for high-fidelity response optimization.
+                  </p>
+                </div>
+                <div className="mt-4 text-[9px] font-mono text-amber-700 uppercase font-black">
+                  • Dataset generator active
+                </div>
+              </div>
+
+              {/* Feature 4 */}
+              <div className="border border-[#5C2E0B] p-5 bg-white shadow-[4px_4px_0px_rgba(92,46,11,0.1)] flex flex-col justify-between">
+                <div>
+                  <div className="aspect-square w-8 bg-amber-500/10 border border-[#5C2E0B] flex items-center justify-center font-mono font-bold text-xs text-[#5C2E0B] mb-3">
+                    04
+                  </div>
+                  <h4 className="text-sm font-black uppercase text-[#3D1E04] mb-2">Phonetic BLEU</h4>
+                  <p className="text-xs text-[#4A321B]/90 leading-relaxed font-sans">
+                    Includes dynamic evaluation models weighing tone-correct translations heavier than baseline text sequences.
+                  </p>
+                </div>
+                <div className="mt-4 text-[9px] font-mono text-amber-700 uppercase font-black">
+                  • Accuracy benchmarks logged
+                </div>
+              </div>
+            </div>
+          </div>
+
+          {/* Startup Strategy Timeline */}
+          <div className="p-6 md:p-8 bg-[#FAF6F0] border-b-[4px] border-[#5C2E0B]">
+            <div className="mb-6">
+              <span className="text-xs font-mono font-bold uppercase text-amber-700">DEVELOPMENT LIFECYCLE</span>
+              <h3 className="text-xl md:text-2xl font-black uppercase text-[#3D1E04]">
+                The Àṣà LLM Dev Roadmap
+              </h3>
+            </div>
+
+            <div className="grid grid-cols-1 lg:grid-cols-4 gap-4">
+              {/* Card 1 */}
+              <div className="bg-white border-2 border-[#5C2E0B] p-4 shadow-[4px_4px_0px_#5C2E0B]">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="bg-amber-200 text-amber-950 text-[10px] font-mono font-bold px-1.5 py-0.5 border border-[#5C2E0B]">PHASE 1</span>
+                  <h4 className="text-xs font-black uppercase text-[#3D1E04]">Yoruba Chatbot</h4>
+                </div>
+                <p className="text-xs text-[#4A321B]/80 leading-relaxed font-sans">
+                  Train base weights on proverbs, literature, and news corpora to master tone alignments and cultural context.
+                </p>
+              </div>
+
+              {/* Card 2 */}
+              <div className="bg-white border-2 border-[#5C2E0B] p-4 shadow-[4px_4px_0px_rgba(92,46,11,0.15)] opacity-85">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="bg-amber-100 text-amber-800 text-[10px] font-mono font-bold px-1.5 py-0.5 border border-[#5C2E0B]/30">PHASE 2</span>
+                  <h4 className="text-xs font-black uppercase text-[#3D1E04]">Bilingual Translate</h4>
+                </div>
+                <p className="text-xs text-[#4A321B]/80 leading-relaxed font-sans">
+                  Deploy secure APIs for English-Yoruba websites, school curricula, and enterprise platforms.
+                </p>
+              </div>
+
+              {/* Card 3 */}
+              <div className="bg-white border-2 border-[#5C2E0B] p-4 shadow-[4px_4px_0px_rgba(92,46,11,0.15)] opacity-85">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="bg-amber-100 text-amber-800 text-[10px] font-mono font-bold px-1.5 py-0.5 border border-[#5C2E0B]/30">PHASE 3</span>
+                  <h4 className="text-xs font-black uppercase text-[#3D1E04]">Voice Synthesis</h4>
+                </div>
+                <p className="text-xs text-[#4A321B]/80 leading-relaxed font-sans">
+                  Incorporate Whisper audio components to interpret spoken dialects and synthesize pitch-perfect outputs.
+                </p>
+              </div>
+
+              {/* Card 4 */}
+              <div className="bg-white border-2 border-[#5C2E0B] p-4 shadow-[4px_4px_0px_rgba(92,46,11,0.15)] opacity-85">
+                <div className="flex items-center gap-1.5 mb-2">
+                  <span className="bg-amber-100 text-amber-800 text-[10px] font-mono font-bold px-1.5 py-0.5 border border-[#5C2E0B]/30">PHASE 4</span>
+                  <h4 className="text-xs font-black uppercase text-[#3D1E04]">Industrial Tutors</h4>
+                </div>
+                <p className="text-xs text-[#4A321B]/80 leading-relaxed font-sans">
+                  Support automated classrooms and customer service agents styled for Yoruba banks and small businesses.
+                </p>
+              </div>
+            </div>
+          </div>
+
+          {/* Primary Action Panel */}
+          <div className="p-8 bg-[#432103] text-white flex flex-col md:flex-row justify-between items-center gap-6">
+            <div className="max-w-2xl">
+              <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">
+                Step inside the developer workspace
+              </h3>
+              <p className="text-xs md:text-sm text-amber-200 mt-2 leading-relaxed font-sans">
+                Launch the interactive admin panel to calibrate fine-tuning hyperparameters, download training-ready source scripts, preprocess unicode text, or execute BLEU evaluations.
+              </p>
+            </div>
+            <button
+              onClick={() => {
+                window.location.hash = "#/admin";
+                setViewMode("admin");
+              }}
+              className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-widest shrink-0 shadow-[4px_4px_0px_#FDFAF5] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#FDFAF5] cursor-pointer"
+            >
+              Enter Administrative Console →
+            </button>
+          </div>
+
+          {/* Footer */}
+          <footer className="bg-[#201A15] p-6 text-center text-[#A68F7A] text-xs font-mono border-t-2 border-[#5C2E0B]">
+            <div>© {new Date().getFullYear()} ÀṢÀ LLM PROJECT. ALL RIGHTS RESERVED CORRESPONDENCE.</div>
+            <div className="text-[10px] mt-1 text-amber-700/60 font-sans tracking-widest uppercase">
+              Ẹ KÚ AJÀṢẸ GA JÙ LỌ — RESEARCH PIPELINE STABLE
+            </div>
+          </footer>
+
+        </div>
+      ) : (
+        /* Outer brutalist frame for ADMIN */
+        <div className="border-[8px] md:border-[12px] border-[#1A1A1A] bg-white flex flex-col shadow-[16px_16px_0px_#1A1A1A] overflow-hidden">
+          
+          {/* Header Block */}
+          <header className="border-b-[4px] border-[#1A1A1A] p-6 bg-white flex flex-col lg:flex-row justify-between items-start lg:items-end gap-6 animate-fadeIn">
+            <div className="flex-1">
+              <div className="flex items-center gap-2 mb-2">
+                <span className="text-xs font-mono font-black tracking-widest uppercase bg-black text-white px-2.5 py-0.5 rounded-sm">
+                  PROJECT PIPELINE PROTOCOL v2.1
+                </span>
+                <span className="text-xs font-mono font-black tracking-widest uppercase bg-yellow-400 border border-black text-[#1A1A1A] px-2.5 py-0.5 rounded-sm">
+                  STABLE
+                </span>
+                <button
+                  onClick={() => {
+                    window.location.hash = "#/";
+                    setViewMode("landing");
+                  }}
+                  className="text-[10px] font-mono font-black tracking-wider uppercase bg-[#5C2E0B] text-[#FAF6F0] px-2 py-0.5 border border-[#5C2E0B]"
+                >
+                  ← Exit Admin (Back to Public Web)
+                </button>
+              </div>
             <h1 className="text-5xl md:text-8xl font-black leading-none tracking-tighter uppercase text-[#1A1A1A]">
               ÀṢÀ LLM
             </h1>
@@ -975,23 +1384,23 @@ export default function App() {
               </div>
             </div>
 
-            {/* STARTUP MVP ROADMAP & ROADPLAY DEMO */}
+            {/* LINGUISTICS & ROADMAP NOTICE */}
             <div className="p-6 bg-[#FAF9F5] border-t-4 border-black">
-              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
-                
-                {/* Left part: Strategy card & Phases */}
-                <div className="xl:col-span-7 flex flex-col justify-between">
-                  <div>
-                    <div className="flex items-center gap-1.5 mb-2">
-                      <span className="w-2 h-2 bg-yellow-400 border border-black"></span>
-                      <h3 className="text-xs font-black uppercase tracking-[0.2em] py-1 border-b-2 border-black inline-block text-black">
-                        04. YORUBA AI STARTUP MVP STRATEGY ROADMAP
-                      </h3>
-                    </div>
-                    <p className="text-sm text-gray-700 leading-relaxed mb-4">
-                      Building a custom West African language model from scratch is highly capital intensive. Our recommended startup strategy is to fine-tune existing foundation models (such as <strong>Qwen-3B</strong>, <strong>Llama-8B</strong>, or <strong>YorubaLlama</strong>) natively on specialized domain-specific datasets to launch high-performance lean products.
-                    </p>
+              <div className="flex flex-col gap-2">
+                <h4 className="text-sm font-black uppercase text-amber-900 flex items-center gap-1">
+                  💡 ADMINISTRATIVE PIPELINE ADVISORY
+                </h4>
+                <p className="text-xs text-gray-700 font-mono leading-relaxed max-w-4xl">
+                  LoRA Hyperparameter controls directly alter the py-script compilation curves. High ranks ($r$) improve grammatical tone adjustments but scale GPU weights, needing A100/H100 execution. Interactive sandbox playgrounds and startup narrative phases are located on the main public webpage.
+                </p>
+              </div>
+            </div>
 
+            {/* Legacy sections can be disabled/collapsed safely for cleaner Admin view */}
+            <div className="hidden">
+              <div className="grid grid-cols-1 xl:grid-cols-12 gap-6">
+                <div className="xl:col-span-7">
+                  <div>
                     <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
                       {/* Phase 1 */}
                       <div className="border-4 border-black p-4 bg-white shadow-[4px_4px_0px_#1A1A1A]">
@@ -1181,7 +1590,6 @@ export default function App() {
 
               </div>
             </div>
-
           </div>
           )}
 
@@ -2347,6 +2755,7 @@ export default function App() {
         </footer>
 
       </div>
+      )}
     </div>
   );
 }
