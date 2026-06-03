@@ -52,6 +52,35 @@ import {
   YorubaExample
 } from "./templates";
 
+async function handleResponseJson(response: Response, actionContext: string): Promise<any> {
+  const contentType = response.headers.get("content-type") || "";
+  
+  if (!response.ok) {
+    let errorMessage = `Server Error (HTTP ${response.status})`;
+    if (contentType.includes("application/json")) {
+      try {
+        const errObj = await response.json();
+        errorMessage = errObj.error || errObj.message || errorMessage;
+      } catch (e) {}
+    } else if (contentType.includes("text/html")) {
+      errorMessage = "The API backend returned HTML instead of JSON. Because you are hosting on Vercel, this is because Vercel serves the frontend dynamically as a static site but does not run the background Node.js server ('server.ts') automatically. To run the full-stack AI features, please execute this application locally using 'npm run dev' or deploy the full repository to Google Cloud Run.";
+    }
+    throw new Error(errorMessage);
+  }
+
+  if (!contentType.includes("application/json")) {
+    const textData = await response.text();
+    const snippetText = textData.trim().substring(0, 120);
+    throw new Error(`The API endpoint '${actionContext}' returned non-JSON format: "${snippetText}". On Vercel, this usually means an unrouted 404 page was served because the backend Express server isn't running in this environment. Please run locally with 'npm run dev' to activate the full-stack support.`);
+  }
+
+  try {
+    return await response.json();
+  } catch (err: any) {
+    throw new Error(`Failed to decode JSON: ${err.message}`);
+  }
+}
+
 export default function App() {
   // Router view state support: landing page vs admin console
   const [viewMode, setViewMode] = useState<"landing" | "admin">("landing");
@@ -296,7 +325,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: rawText }),
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "normalize-text");
       if (data.success) {
         setNormalizedResult({
           normalizedText: data.normalizedText,
@@ -324,7 +353,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ category: newCategory, count: 5 }),
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "generate-data");
       if (data.success && data.data) {
         const enriched: YorubaExample[] = data.data.map((item: any, idx: number) => ({
           id: `gen-${Date.now()}-${idx}`,
@@ -360,7 +389,7 @@ export default function App() {
           candidate: evalCandidate
         }),
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "evaluate-response");
       if (data.success && data.evaluation) {
         setEvalResult(data.evaluation);
       } else {
@@ -394,7 +423,7 @@ export default function App() {
           }))
         }),
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "chat-assistant");
       if (data.success && data.reply) {
         setMessages((prev) => [...prev, { role: "assistant", content: data.reply }]);
       } else {
@@ -541,7 +570,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ name: nameStr })
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "yorubaname-parse");
       if (data.success) {
         setEcoNameAnalysis(data.analysis);
       } else {
@@ -565,7 +594,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: ecoLlamaPrompt, temperature: ecoLlamaTemp })
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "yoruballama-simulate");
       if (data.success) {
         setEcoLlamaResult(data.response);
       } else {
@@ -588,7 +617,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ text: ecoTextCorpus })
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "yorubatext-profile");
       if (data.success) {
         setEcoTextMetrics(data.analysis);
       } else {
@@ -616,7 +645,7 @@ export default function App() {
         headers: { "Content-Type": "application/json" },
         body: JSON.stringify({ prompt: textToSend, temperature: 0.4 })
       });
-      const data = await response.json();
+      const data = await handleResponseJson(response, "yoruballama-simulate-mvp");
       if (data.success) {
         setMvpChatHistory([...newHistory, { role: "bot" as const, text: data.response }]);
       } else {
@@ -667,7 +696,7 @@ export default function App() {
                     HERITAGE PORTAL
                   </span>
                   <span className="text-[9px] font-mono font-black tracking-widest uppercase bg-amber-500 text-black px-2 py-0.5">
-                    {simpleMode ? "🌸 EASY-USE VOICE APP" : "⚙️ DEVELOPER NLP SPEC"}
+                    🗣️ NATIVE VOICE APP
                   </span>
                 </div>
                 <div className="flex items-baseline gap-2">
@@ -677,96 +706,37 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Mode Toggle Switch - Perfect for Non-Technical vs Tech Users */}
-              <div className="hidden lg:flex items-center gap-1 border-2 border-[#5C2E0B] bg-[#FDFAF5] p-1 shadow-[2px_2px_0px_#5C2E0B]">
-                <button
-                  onClick={() => setSimpleMode(true)}
-                  className={`px-3 py-1.5 text-xs font-black uppercase transition-all cursor-pointer ${
-                    simpleMode ? "bg-[#B45309] text-white" : "text-[#5C2E0B] hover:bg-amber-100"
-                  }`}
-                >
-                  🌸 Simple Mode (Easy/Voice)
-                </button>
-                <button
-                  onClick={() => setSimpleMode(false)}
-                  className={`px-3 py-1.5 text-xs font-black uppercase transition-all cursor-pointer ${
-                    !simpleMode ? "bg-[#B45309] text-white" : "text-[#5C2E0B] hover:bg-amber-100"
-                  }`}
-                >
-                  ⚙️ Developer Specs
-                </button>
-              </div>
-
               {/* Responsive Navigation links */}
-              {simpleMode ? (
-                <nav className="hidden lg:flex items-center gap-1.5 font-mono text-xs font-bold text-[#5C2E0B]">
-                  <button 
-                    onClick={() => scrollToSection('voicespace')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    💬 Voice Chat
-                  </button>
-                  <button 
-                    onClick={() => scrollToSection('apoya-tts')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    🔊 Read Aloud (TTS)
-                  </button>
-                  <button 
-                    onClick={() => scrollToSection('pronunciation')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    🎭 Pronunciation Guide
-                  </button>
-                  <button 
-                    onClick={() => scrollToSection('proverbs')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    📖 Wisdom Proverbs
-                  </button>
-                </nav>
-              ) : (
-                <nav className="hidden lg:flex items-center gap-1.5 font-mono text-xs font-bold text-[#5C2E0B]">
-                  <button 
-                    onClick={() => scrollToSection('philosophy')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    📖 Philosophy
-                  </button>
-                  <button 
-                    onClick={() => scrollToSection('sandbox')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    💬 Sandbox
-                  </button>
-                  <button 
-                    onClick={() => scrollToSection('features')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    ⚡ Suite Features
-                  </button>
-                  <button 
-                    onClick={() => scrollToSection('roadmap')}
-                    className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
-                  >
-                    🗺️ Dev Roadmap
-                  </button>
-                </nav>
-              )}
+              <nav className="hidden lg:flex items-center gap-1.5 font-mono text-xs font-bold text-[#5C2E0B]">
+                <button 
+                  onClick={() => scrollToSection('voicespace')}
+                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                >
+                  💬 Voice Chat
+                </button>
+                <button 
+                  onClick={() => scrollToSection('apoya-tts')}
+                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                >
+                  🔊 Read Aloud (TTS)
+                </button>
+                <button 
+                  onClick={() => scrollToSection('pronunciation')}
+                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                >
+                  🎭 Pronunciation Guide
+                </button>
+                <button 
+                  onClick={() => scrollToSection('proverbs')}
+                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                >
+                  📖 Wisdom Proverbs
+                </button>
+              </nav>
 
               {/* Right CTA / Menu Trigger */}
               <div className="flex items-center gap-2">
                 
-                <button
-                  onClick={() => {
-                    window.location.hash = "#/admin";
-                    setViewMode("admin");
-                  }}
-                  className="hidden md:inline-flex bg-[#5C2E0B] hover:bg-[#3D1E04] text-white px-4 py-2 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider transition-all shadow-[3px_3px_0px_#B45309]"
-                >
-                  Developer Console 🛠️
-                </button>
-
                 {/* Mobile Hamburger menu */}
                 <button
                   onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
@@ -784,112 +754,53 @@ export default function App() {
             {mobileMenuOpen && (
               <div className="lg:hidden border-t-2 border-[#5C2E0B] bg-[#FDFAF5] p-4 flex flex-col gap-3 animate-fadeIn">
                 
-                {/* Mobile Mode Switcher */}
-                <div className="flex border-2 border-[#5C2E0B] bg-white p-1">
-                  <button
-                    onClick={() => {
-                      setSimpleMode(true);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`flex-1 text-center py-2.5 text-xs font-black uppercase ${
-                      simpleMode ? "bg-[#B45309] text-white" : "text-[#5C2E0B]"
-                    }`}
-                  >
-                    🌸 Simple Mode
-                  </button>
-                  <button
-                    onClick={() => {
-                      setSimpleMode(false);
-                      setMobileMenuOpen(false);
-                    }}
-                    className={`flex-1 text-center py-2.5 text-xs font-black uppercase ${
-                      !simpleMode ? "bg-[#B45309] text-white" : "text-[#5C2E0B]"
-                    }`}
-                  >
-                    ⚙️ Developer NLP
-                  </button>
-                </div>
-
                 <div className="text-[10px] font-mono tracking-widest font-black uppercase text-amber-800">
                   Quick Navigation / Atúsọ̀nà
                 </div>
 
-                {simpleMode ? (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button
-                      onClick={() => scrollToSection('voicespace')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>💬 Voice Chat</span>
-                      <span className="text-[10.5px] italic text-amber-700">Gbọ̀ngàn</span>
-                    </button>
-                    <button
-                      onClick={() => scrollToSection('apoya-tts')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>🔊 Read Aloud (TTS)</span>
-                      <span className="text-[10.5px] italic text-amber-700">Kà Álò</span>
-                    </button>
-                    <button
-                      onClick={() => scrollToSection('pronunciation')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>🎭 Pronunciation</span>
-                      <span className="text-[10.5px] italic text-amber-700">Ohùn Yoù</span>
-                    </button>
-                    <button
-                      onClick={() => scrollToSection('proverbs')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>📖 Wisdom Proverbs</span>
-                      <span className="text-[10.5px] italic text-amber-700">Àwọn Òwe</span>
-                    </button>
-                  </div>
-                ) : (
-                  <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
-                    <button
-                      onClick={() => scrollToSection('philosophy')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>📖 01. Philosophy</span>
-                      <span className="text-[10px] italic text-amber-700">Ìmọ̀-òfin</span>
-                    </button>
-                    <button
-                      onClick={() => scrollToSection('sandbox')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>💬 02. Sandbox Chat</span>
-                      <span className="text-[10px] italic text-amber-700">Ṣàpẹẹrẹ</span>
-                    </button>
-                    <button
-                      onClick={() => scrollToSection('features')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>⚡ 03. Features</span>
-                      <span className="text-[10px] italic text-amber-700">Àwọn Ohun</span>
-                    </button>
-                    <button
-                      onClick={() => scrollToSection('roadmap')}
-                      className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
-                    >
-                      <span>🗺️ 04. Dev Roadmap</span>
-                      <span className="text-[10px] italic text-amber-700">Ọ̀nà Àbò</span>
-                    </button>
-                  </div>
-                )}
-
-                <div className="border-t border-[#5C2E0B]/20 pt-3">
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     onClick={() => {
+                      scrollToSection('voicespace');
                       setMobileMenuOpen(false);
-                      window.location.hash = "#/admin";
-                      setViewMode("admin");
                     }}
-                    className="w-full text-center py-3 bg-[#5C2E0B] text-white border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider min-h-[44px]"
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
                   >
-                    Open Developer Console ⚙️
+                    <span>💬 Voice Chat</span>
+                    <span className="text-[10.5px] italic text-amber-700">Gbọ̀ngàn</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      scrollToSection('apoya-tts');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>🔊 Read Aloud (TTS)</span>
+                    <span className="text-[10.5px] italic text-amber-700">Kà Álò</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      scrollToSection('pronunciation');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>🎭 Pronunciation</span>
+                    <span className="text-[10.5px] italic text-amber-700">Ohùn Yoù</span>
+                  </button>
+                  <button
+                    onClick={() => {
+                      scrollToSection('proverbs');
+                      setMobileMenuOpen(false);
+                    }}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>📖 Wisdom Proverbs</span>
+                    <span className="text-[10.5px] italic text-amber-700">Àwọn Òwe</span>
                   </button>
                 </div>
+
               </div>
             )}
           </header>
@@ -1845,35 +1756,26 @@ export default function App() {
                 </div>
               </div>
 
-              {/* Primary Action Panel */}
-              <div className="p-8 bg-[#432103] text-white flex flex-col md:flex-row justify-between items-center gap-6">
-                <div className="max-w-2xl">
-                  <h3 className="text-xl md:text-2xl font-black uppercase tracking-tight">
-                    Step inside the developer workspace
-                  </h3>
-                  <p className="text-xs md:text-sm text-amber-200 mt-2 leading-relaxed font-sans">
-                    Launch the interactive admin panel to calibrate fine-tuning hyperparameters, download training-ready source scripts, preprocess unicode text, or execute BLEU evaluations.
-                  </p>
-                </div>
-                <button
-                  onClick={() => {
-                    window.location.hash = "#/admin";
-                    setViewMode("admin");
-                  }}
-                  className="bg-amber-500 hover:bg-amber-400 text-black px-6 py-3 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-widest shrink-0 shadow-[4px_4px_0px_#FDFAF5] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#FDFAF5] cursor-pointer"
-                >
-                  Enter Administrative Console →
-                </button>
-              </div>
-
+              {/* Clean transition into footer */}
             </div>
           )}
 
           {/* Footer */}
           <footer className="bg-[#201A15] p-6 text-center text-[#A68F7A] text-xs font-mono border-t-2 border-[#5C2E0B]">
             <div>© {new Date().getFullYear()} ÀṢÀ LLM PROJECT. ALL RIGHTS RESERVED CORRESPONDENCE.</div>
-            <div className="text-[10px] mt-1 text-amber-700/60 font-sans tracking-widest uppercase">
+            <div className="text-[10px] mt-1 text-[#A68F7A]/60 font-sans tracking-widest uppercase">
               Ẹ KÚ AJÀṢẸ GA JÙ LỌ — RESEARCH PIPELINE STABLE
+            </div>
+            <div className="mt-3 pt-2 border-t border-white/5">
+              <button
+                onClick={() => {
+                  window.location.hash = "#/admin";
+                  setViewMode("admin");
+                }}
+                className="text-[#A68F7A]/30 hover:text-amber-500 underline text-[10px] font-mono tracking-wider uppercase transition-all duration-200 cursor-pointer"
+              >
+                🛠️ Advanced Developer Workspace (Hyperparameters & Corpus Generation)
+              </button>
             </div>
           </footer>
 
