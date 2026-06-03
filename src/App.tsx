@@ -33,7 +33,8 @@ import {
   VolumeX,
   Keyboard,
   Info,
-  ChevronRight
+  ChevronRight,
+  Mic
 } from "lucide-react";
 
 import {
@@ -449,6 +450,63 @@ export default function App() {
   // Router view state support: landing page vs admin console
   const [viewMode, setViewMode] = useState<"landing" | "admin">("landing");
   const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
+  
+  // Dynamic page selection states to organize elements into spacious separate pages
+  const [activePage, setActivePage] = useState<"chatbot" | "tts" | "pronunciation" | "developer">("chatbot");
+  const [isSTTActive, setIsSTTActive] = useState<boolean>(false);
+  const [sttErrorMsg, setSttErrorMsg] = useState<string | null>(null);
+
+  // Trigger browser Speech-to-Text with support for Chrome / Safari/ Edge with yo-NG locale
+  const triggerSpeechToText = () => {
+    const SpeechRecAPI = (window as any).SpeechRecognition || (window as any).webkitSpeechRecognition;
+    if (!SpeechRecAPI) {
+      setSttErrorMsg("Your browser does not support Speech to Text. Please try using Google Chrome or Microsoft Edge on a desktop or Android phone.");
+      setTimeout(() => setSttErrorMsg(null), 6000);
+      return;
+    }
+
+    try {
+      const recognition = new SpeechRecAPI();
+      recognition.continuous = false;
+      recognition.lang = "yo-NG"; // Yoruba phonetic localization
+      recognition.interimResults = false;
+      recognition.maxAlternatives = 1;
+
+      recognition.onstart = () => {
+        setIsSTTActive(true);
+        setSttErrorMsg(null);
+      };
+
+      recognition.onresult = (evt: any) => {
+        const transcriptText = evt.results[0][0].transcript;
+        if (transcriptText) {
+          // If input has some text, append spacer and transcript
+          setMvpChatInput((prev) => (prev ? prev + " " + transcriptText : transcriptText));
+        }
+      };
+
+      recognition.onerror = (evt: any) => {
+        console.warn("Speech Recognition Error:", evt.error);
+        if (evt.error === "not-allowed") {
+          setSttErrorMsg("Microphone access was denied. Please allow microphone permissions in your URL bar settings.");
+        } else {
+          setSttErrorMsg(`Dictation couldn't capture audio: ${evt.error}`);
+        }
+        setIsSTTActive(false);
+        setTimeout(() => setSttErrorMsg(null), 6000);
+      };
+
+      recognition.onend = () => {
+        setIsSTTActive(false);
+      };
+
+      recognition.start();
+    } catch (err: any) {
+      console.error("Speech Recognition setup error:", err);
+      setSttErrorMsg(err.message || "Failed to initialize standard STT driver wrapper.");
+      setIsSTTActive(false);
+    }
+  };
   
   // Custom states for non-technical user experience (Simple Mode & Native Text-To-Speech)
   const [simpleMode, setSimpleMode] = useState<boolean>(true);
@@ -1065,28 +1123,44 @@ export default function App() {
               {/* Responsive Navigation links */}
               <nav className="hidden lg:flex items-center gap-1.5 font-mono text-xs font-bold text-[#5C2E0B]">
                 <button 
-                  onClick={() => scrollToSection('voicespace')}
-                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                  onClick={() => { setActivePage("chatbot"); setSimpleMode(true); }}
+                  className={`px-3 py-2 transition-all cursor-pointer border-2 uppercase font-black ${
+                    activePage === "chatbot" 
+                      ? "bg-amber-500 text-black border-[#5C2E0B] shadow-[2.5px_2.5px_0px_#5C2E0B]" 
+                      : "border-transparent hover:bg-amber-100/60"
+                  }`}
                 >
-                  💬 Voice Chat
+                  💬 Chatbot Sandbox MVP
                 </button>
                 <button 
-                  onClick={() => scrollToSection('apoya-tts')}
-                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                  onClick={() => { setActivePage("tts"); setSimpleMode(true); }}
+                  className={`px-3 py-2 transition-all cursor-pointer border-2 uppercase font-black ${
+                    activePage === "tts" 
+                      ? "bg-amber-500 text-black border-[#5C2E0B] shadow-[2.5px_2.5px_0px_#5C2E0B]" 
+                      : "border-transparent hover:bg-amber-100/60"
+                  }`}
                 >
                   🔊 Read Aloud (TTS)
                 </button>
                 <button 
-                  onClick={() => scrollToSection('pronunciation')}
-                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                  onClick={() => { setActivePage("pronunciation"); setSimpleMode(true); }}
+                  className={`px-3 py-2 transition-all cursor-pointer border-2 uppercase font-black ${
+                    activePage === "pronunciation" 
+                      ? "bg-amber-500 text-black border-[#5C2E0B] shadow-[2.5px_2.5px_0px_#5C2E0B]" 
+                      : "border-transparent hover:bg-amber-100/60"
+                  }`}
                 >
-                  🎭 Pronunciation Guide
+                  🎭 Pronunciation & Proverbs
                 </button>
                 <button 
-                  onClick={() => scrollToSection('proverbs')}
-                  className="px-3 py-2 hover:bg-amber-100/60 transition-all cursor-pointer"
+                  onClick={() => { setActivePage("developer"); setSimpleMode(false); }}
+                  className={`px-3 py-2 transition-all cursor-pointer border-2 uppercase font-black ${
+                    activePage === "developer" 
+                      ? "bg-amber-500 text-black border-[#5C2E0B] shadow-[2.5px_2.5px_0px_#5C2E0B]" 
+                      : "border-transparent hover:bg-amber-100/60"
+                  }`}
                 >
-                  📖 Wisdom Proverbs
+                  ⚙️ Developer NLP Specs
                 </button>
               </nav>
 
@@ -1117,43 +1191,55 @@ export default function App() {
                 <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
                   <button
                     onClick={() => {
-                      scrollToSection('voicespace');
+                      setActivePage("chatbot");
+                      setSimpleMode(true);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                    className={`w-full flex items-center justify-between text-left px-4 py-3 border-2 text-xs font-black uppercase cursor-pointer min-h-[48px] ${
+                      activePage === "chatbot" ? "bg-amber-500 text-black border-[#5C2E0B]" : "bg-white text-[#3D1E04] border-[#5C2E0B]"
+                    }`}
                   >
-                    <span>💬 Voice Chat</span>
+                    <span>💬 Voice Chat Sandbox</span>
                     <span className="text-[10.5px] italic text-amber-700">Gbọ̀ngàn</span>
                   </button>
                   <button
                     onClick={() => {
-                      scrollToSection('apoya-tts');
+                      setActivePage("tts");
+                      setSimpleMode(true);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                    className={`w-full flex items-center justify-between text-left px-4 py-3 border-2 text-xs font-black uppercase cursor-pointer min-h-[48px] ${
+                      activePage === "tts" ? "bg-amber-500 text-black border-[#5C2E0B]" : "bg-white text-[#3D1E04] border-[#5C2E0B]"
+                    }`}
                   >
                     <span>🔊 Read Aloud (TTS)</span>
                     <span className="text-[10.5px] italic text-amber-700">Kà Álò</span>
                   </button>
                   <button
                     onClick={() => {
-                      scrollToSection('pronunciation');
+                      setActivePage("pronunciation");
+                      setSimpleMode(true);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                    className={`w-full flex items-center justify-between text-left px-4 py-3 border-2 text-xs font-black uppercase cursor-pointer min-h-[48px] ${
+                      activePage === "pronunciation" ? "bg-amber-500 text-black border-[#5C2E0B]" : "bg-white text-[#3D1E04] border-[#5C2E0B]"
+                    }`}
                   >
-                    <span>🎭 Pronunciation</span>
+                    <span>🎭 Pronunciation Guide</span>
                     <span className="text-[10.5px] italic text-amber-700">Ohùn Yoù</span>
                   </button>
                   <button
                     onClick={() => {
-                      scrollToSection('proverbs');
+                      setActivePage("developer");
+                      setSimpleMode(false);
                       setMobileMenuOpen(false);
                     }}
-                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                    className={`w-full flex items-center justify-between text-left px-4 py-3 border-2 text-xs font-black uppercase cursor-pointer min-h-[48px] ${
+                      activePage === "developer" ? "bg-amber-500 text-[#1A1A1A] border-[#5C2E0B]" : "bg-white text-[#3D1E04] border-[#5C2E0B]"
+                    }`}
                   >
-                    <span>📖 Wisdom Proverbs</span>
-                    <span className="text-[10.5px] italic text-amber-700">Àwọn Òwe</span>
+                    <span>⚙️ Developer Specs</span>
+                    <span className="text-[10.5px] italic text-amber-700 font-bold">Ibi-Iṣẹ́</span>
                   </button>
                 </div>
 
@@ -1162,8 +1248,27 @@ export default function App() {
           </header>
 
           {simpleMode ? (
-            /* 🌸 SUPER CLEAN SIMPLE MODE FOR NON-TECHNICAL USERS */
-            <div id="voicespace" className="flex flex-col animate-fadeIn">
+            /* 🌸 SUPER CLEAN SIMPLE MODE WITH FULL-PAGE PORTALS */
+            <div className="flex flex-col animate-fadeIn">
+
+              {/* ========================================================= */}
+              {/* PAGE 1: SPECIALLY DESIGNED ROOMY CHATBOT PORTAL */}
+              {/* ========================================================= */}
+              {activePage === "chatbot" && (
+                <div id="voicespace_fullpage" className="flex flex-col animate-fadeIn px-2 sm:px-4 md:px-8 py-6 max-w-5xl mx-auto w-full space-y-6">
+                  
+                  {/* Premium Heritage Title block */}
+                  <div className="bg-[#FAF6F0] p-6 md:p-10 border-4 border-[#5C2E0B] text-center w-full shadow-[6px_6px_0px_rgba(92,46,11,0.15)]">
+                    <span className="text-xs font-mono font-black tracking-widest text-[#B45309] bg-orange-100 border border-[#B45309] px-4 py-1.5 uppercase rounded-full animate-pulse">
+                      💬 YORUBA CHATBOT MVP SANDBOX
+                    </span>
+                    <h2 className="text-3xl md:text-5xl font-black uppercase text-[#3D1E04] tracking-tight mt-4 mb-2">
+                      Sándíbọ́sì Ṣábà (Interactive Dialog Hub)
+                    </h2>
+                    <p className="font-serif italic text-xs md:text-sm text-[#5C2E0B]/85 max-w-2xl mx-auto">
+                      Dictate Yoruba sentences using real-time Speech-to-Text, playback authentic Oyo-dialect voices, and practice conversation.
+                    </p>
+                  </div>
               
               {/* Top Hero Wave / Title space */}
               <div className="bg-[#FAF6F0] p-6 md:p-8 border-b-4 border-[#5C2E0B] text-center max-w-4xl mx-auto w-full">
@@ -1181,7 +1286,8 @@ export default function App() {
               {/* Chat & Fast Tutor row */}
               <div className="grid grid-cols-1 lg:grid-cols-12 divide-y-[4px] lg:divide-y-0 lg:divide-x-[4px] divide-[#5C2E0B] border-b-[4px] border-[#5C2E0B]">
                 
-                {/* Left Panel: Clean Tutorial Guide & Accent Tutor */}
+                {/* Left Panel: Omitted from Chatbot page: resides on dedicated Pronunciation tab */}
+                {false && (
                 <div id="pronunciation" className="lg:col-span-5 p-6 md:p-8 bg-[#FDFAF5] flex flex-col justify-between scroll-mt-24">
                   <div className="space-y-6">
                     <div>
@@ -1276,9 +1382,10 @@ export default function App() {
                     </span>
                   </div>
                 </div>
+                )}
 
                 {/* Right Panel: Clean, Voice-Enabled Conversational Chatbot */}
-                <div id="voicesandbox" className="lg:col-span-7 p-6 md:p-8 bg-[#FAF6F0] flex flex-col justify-between">
+                <div id="voicesandbox" className="lg:col-span-12 p-3 sm:p-6 md:p-8 bg-[#FCFAF7] flex flex-col justify-between">
                   <div className="border-4 border-[#5C2E0B] p-5 bg-white shadow-[8px_8px_0px_#5C2E0B] h-full flex flex-col justify-between space-y-4">
                     <div>
                       <div className="flex items-center justify-between pb-3 border-b-2 border-dashed border-[#5C2E0B]/40">
@@ -1402,8 +1509,30 @@ export default function App() {
                     </div>
 
                     {/* Chat Input Control */}
-                    <div>
-                      <div className="flex gap-2">
+                    <div className="space-y-3.5">
+                      {sttErrorMsg && (
+                        <div className="p-3 bg-red-50 text-red-950 border-2 border-red-800 font-mono text-[11px] uppercase flex items-center gap-1.5 animate-shake">
+                          <span>⚠️ Dictation error:</span>
+                          <span>{sttErrorMsg}</span>
+                        </div>
+                      )}
+                      
+                      <div className="flex flex-col sm:flex-row gap-2.5">
+                        
+                        {/* Chrome / Edge Web Speech SDK trigger key */}
+                        <button
+                          onClick={triggerSpeechToText}
+                          className={`px-4 py-3 border-2 border-[#5C2E0B] text-xs font-black uppercase flex items-center justify-center gap-2 transition-all cursor-pointer shadow-[3px_3px_0px_#5C2E0B] active:translate-y-0.5 shrink-0 ${
+                            isSTTActive 
+                              ? "bg-red-500 text-white border-red-700 animate-pulse font-extrabold" 
+                              : "bg-amber-100 text-[#5C2E0B] hover:bg-amber-200"
+                          }`}
+                          title="Click to dictate standard Yoruba speech aloud!"
+                        >
+                          <Mic className="w-4 h-4" />
+                          <span>{isSTTActive ? "🎙️ RECORDING ACTIVE..." : "🎤 DICTATE VOICE"}</span>
+                        </button>
+
                         <input
                           type="text"
                           value={mvpChatInput}
@@ -1413,37 +1542,41 @@ export default function App() {
                               handleMvpHourlyChat();
                             }
                           }}
-                          placeholder="Reply in Yoruba or ask in English (e.g., 'Say hello' or 'Kú àárọ̀')..."
-                          className="flex-1 min-w-0 border-2 border-[#5C2E0B] bg-white px-3 py-2 text-xs font-mono placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#B45309]"
+                          placeholder={isSTTActive ? "Dictating standard Yoruba... speak clearly now!" : "Reply in Yoruba with tones, or type a request..."}
+                          className="flex-1 min-w-0 border-2 border-[#5C2E0B] bg-white px-3.5 py-3 text-xs md:text-sm font-mono placeholder-gray-400 focus:outline-none focus:ring-1 focus:ring-[#B45309]"
                           disabled={mvpChatLoading}
                         />
+
                         <button
                           onClick={() => handleMvpHourlyChat()}
                           disabled={mvpChatLoading || !mvpChatInput.trim()}
-                          className="bg-[#5C2E0B] hover:bg-[#3D1E04] text-white px-4 py-2 border-2 border-[#5C2E0B] text-xs font-black uppercase cursor-pointer disabled:opacity-50"
+                          className="bg-[#5C2E0B] hover:bg-[#3D1E04] text-white px-6 py-3 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider cursor-pointer disabled:opacity-50"
                         >
-                          Send ↗
+                          Send Message ↗
                         </button>
                       </div>
+                    </div>
                       
-                      <div className="flex justify-between items-center mt-2 text-[10px] font-mono text-gray-500">
-                        <span>💡 Converses fluently with native tone diacritics.</span>
-                        <button
-                          onClick={() => setMvpChatHistory([])}
-                          className="text-red-700 hover:underline font-bold"
-                        >
-                          Clear Dialogue
-                        </button>
-                      </div>
+                    <div className="flex justify-between items-center mt-2 text-[10px] font-mono text-gray-500">
+                      <span>💡 Converses fluently with native tone diacritics.</span>
+                      <button
+                        onClick={() => setMvpChatHistory([])}
+                        className="text-red-700 hover:underline font-bold"
+                      >
+                        Clear Dialogue
+                      </button>
                     </div>
 
                   </div>
                 </div>
 
               </div>
+            </div>
+            )}
 
-              {/* 🎤 DEDICATED TEXT TO SPEECH WORKSTATION */}
-              <div id="apoya-tts" className="p-6 md:p-8 bg-[#FFFCEB] border-b-4 border-[#5C2E0B] scroll-mt-24">
+              {/* PAGE 2: READ ALOUD (TTS) LAB */}
+              {activePage === "tts" && (
+                <div id="apoya-tts" className="p-6 md:p-8 bg-[#FFFCEB] border-b-4 border-[#5C2E0B] scroll-mt-24">
                 <div className="max-w-4xl mx-auto">
                   
                   {/* Section Title */}
@@ -1596,12 +1729,59 @@ export default function App() {
                     </div>
 
                   </div>
-
                 </div>
               </div>
+              )}
 
-              {/* 📖 PROVERBS AND CULTURAL ORAL WISDOM */}
-              <div id="proverbs" className="p-6 md:p-8 bg-[#FCFAF5] border-b-4 border-[#5C2E0B] scroll-mt-24">
+              {/* PAGE 3: PRONUNCIATION & PROVERBS GUIDES */}
+              {activePage === "pronunciation" && (
+                <div className="flex flex-col animate-fadeIn px-2 sm:px-4 md:px-8 py-6 max-w-5xl mx-auto w-full space-y-10">
+                  
+                  {/* Incorporating the Syllable Tutor directly on this page! */}
+                  <div className="border-4 border-[#5C2E0B] p-6 sm:p-8 bg-white shadow-[8px_8px_0px_#5C2E0B] space-y-5">
+                    <div>
+                      <span className="text-[10px] font-mono tracking-widest uppercase bg-amber-500 font-bold text-black px-2 py-0.5">
+                        PHONETIC LAB
+                      </span>
+                      <h3 className="text-2xl font-black uppercase text-[#3D1E04] mt-2">
+                        Why We Care About Pitch (Ohùn)
+                      </h3>
+                      <div className="w-16 h-1 bg-[#B45309] mt-1" />
+                    </div>
+
+                    <p className="text-xs sm:text-sm text-[#4A321B] leading-relaxed">
+                      Yoruba is a tonal language. Spelled without modulations, the letters <strong>"awo"</strong> can generate completely distinct dictionaries. Tap the keys below to practice distinct pitch pronunciations:
+                    </p>
+
+                    <div className="grid grid-cols-1 sm:grid-cols-2 md:grid-cols-4 gap-3 bg-[#FAF6F0] p-4 border-2 border-[#5C2E0B]">
+                      {[
+                        { text: "àwò", definition: "Color or Pattern", tone: "Low-Low pitch (à-wò)" },
+                        { text: "awó", definition: "Guinea fowl wild bird", tone: "Flat-High pitch (a-wó)" },
+                        { text: "awo", definition: "Clay plate dish / vessel", tone: "Flat-Flat pitch (a-wo)" },
+                        { text: "awọ́", definition: "Secret or Cult order", tone: "Flat-High subdot (a-wọ́)" }
+                      ].map((item) => (
+                        <button
+                          key={item.text}
+                          onClick={() => speakYoruba(item.text)}
+                          className={`flex flex-col justify-between p-4 border bg-white transition-all cursor-pointer text-left h-24 ${
+                            speakingText === item.text ? "bg-amber-200 border-[#5C2E0B] shadow-[3px_3px_0px_#5C2E0B]" : "hover:bg-amber-50 border-[#5C2E0B]/30 shadow-[1px_1px_0px_rgba(0,0,0,0.05)]"
+                          }`}
+                        >
+                          <div className="flex justify-between items-center mb-1">
+                            <span className="font-extrabold text-sm text-[#7C2D12]">{item.text} 🔊</span>
+                            <Volume2 className={`w-3.5 h-3.5 text-amber-600 ${speakingText === item.text ? "animate-bounce" : ""}`} />
+                          </div>
+                          <div>
+                            <span className="text-xs font-bold text-gray-900 leading-none block">{item.definition}</span>
+                            <span className="text-[9px] text-[#5C2E0B] font-mono mt-0.5 block">{item.tone}</span>
+                          </div>
+                        </button>
+                      ))}
+                    </div>
+                  </div>
+
+                  {/* Proverbs Cards Row */}
+                  <div id="proverbs" className="p-6 md:p-8 bg-[#FCFAF5] border-4 border-[#5C2E0B] shadow-[8px_8px_0px_#5C2E0B] scroll-mt-24">
                 <div className="mb-6 flex items-center justify-between">
                   <div>
                     <span className="text-xs font-mono font-bold uppercase text-amber-700">ORAL TRADITIONS (ÀWỌN ÒWE YORUBA)</span>
@@ -1700,6 +1880,9 @@ export default function App() {
                   ))}
                 </div>
               </div>
+
+            </div>
+            )}
 
               {/* SIMPLIFIED CTA */}
               <div className="p-8 bg-[#432103] text-white flex flex-col md:flex-row justify-between items-center gap-6">
