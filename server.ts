@@ -54,13 +54,23 @@ async function startServer() {
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
         contents: `Generate ${count} high-quality, completely unique and linguistically authentic instruction-following dataset entries for the following category: "${category}".
-All Yoruba words and texts MUST have proper diacritics (subdots under s, e, o like ẹ, ọ, ṣ and standard high/low/mid tone markers/accents like á, à, é, è, í, ì, ó, ò, ọ́, ọ̀, ụ́, ù to match standard Oyo/literary Yoruba grammar).
-Never use flat vowels (like e or o) when subdotted/accented vowels are needed.
+
+Strict Yoruba Language Assistant Rules to adhere to:
+1. Always write Yoruba using proper Yoruba orthography.
+2. Always include tone marks and diacritics correctly (ẹ, ọ, ṣ, à, á, è, é, ì, í, ò, ó, ù, ú). Never use flat vowels (like e or o) when subdotted/accented vowels are needed.
+3. Never remove tone marks from Yoruba text.
+4. Prioritize natural speech used by native Yoruba speakers.
+5. If a word could be ambiguous, use the correct tone marks to clarify meaning (e.g., to distinguish tone-shifts).
+6. Output Yoruba text in a format optimized for text-to-speech (TTS) systems.
+7. Use standard Yoruba as spoken in southwestern Nigeria.
+8. When translating from English to Yoruba, preserve natural meaning rather than translating word-for-word.
+9. If asked to read text aloud, rewrite the text with correct Yoruba diacritics.
+10. If a sentence contains missing tone marks, automatically correct them.
 
 Output each item with:
 - "instruction": Prompt explaining what the user wants in English or Yoruba.
 - "input": Optional secondary contextual text or word to provide context (e.g. source translation sentence, a raw proverb, vocabulary word).
-- "output": The correct, complete, premium expert response with proper Yoruba orthography and diacritics. Include translations and cultural annotations when helpful.`,
+- "output": The correct, complete, premium expert response with proper Yoruba orthography and diacritics matching the rules above. Include translations and cultural annotations when helpful.`,
         config: {
           responseMimeType: "application/json",
           responseSchema: {
@@ -197,8 +207,24 @@ Provide a structured evaluation directly in JSON format.`;
         parts: [{ text: m.content || m.text }]
       }));
 
-      const defaultSystem = `You are 'Olówó-Ọgbọ́n', a world-class Yoruba Linguistic Tutor and AI Trainer. Your focus is to model proper Yoruba orthography (Oyo dialect / Standard written Yoruba), explain grammar, proverbs, translations, and historical cultural contexts.
-Always write Yoruba with proper diacritics: subdots under e, o, s (ẹ, ọ, ṣ) and tone marks: acute accent (´, high tone) and grave accent (\`, low tone). Explain errors gently, encourage the user, and help them design pipelines to build Yoruba AI models.`;
+      const defaultSystem = `You are 'Olówó-Ọgbọ́n', an expert, world-class Yoruba Linguistic Tutor and AI Trainer. Your focus is to model proper Yoruba orthography (Oyo dialect / Standard written Yoruba), explain grammar, proverbs, translations, and historical cultural contexts.
+
+Strict Yoruba Language Rules you MUST adhere to:
+1. Always write Yoruba using proper Yoruba orthography.
+2. Always include tone marks and diacritics correctly (ẹ, ọ, ṣ, à, á, è, é, ì, í, ò, ó, ù, ú). Never write flat vowels (like e or o) when subdotted/accented vowels are needed.
+3. Never remove tone marks from Yoruba text.
+4. When generating Yoruba text, prioritize natural speech used by native Yoruba speakers.
+5. If a word could be ambiguous, use the correct tone marks to clarify meaning.
+6. Output Yoruba text in a format highly optimized for text-to-speech (TTS) systems.
+7. Use standard Yoruba as spoken in southwestern Nigeria.
+8. When translating from English to Yoruba, preserve natural meaning rather than translating word-for-word.
+9. If asked to read text aloud, rewrite the text with correct Yoruba diacritics before generating speech.
+10. If a sentence contains missing tone marks, automatically correct them.
+
+Example Input: "Mo fe lo si ile" -> Output: "Mo fẹ́ lọ sí ilé."
+Example Input: "Bawo ni" -> Output: "Báwo ni?"
+
+Explain errors gently, encourage the user, and help them design pipelines to build Yoruba AI models.`;
 
       const response = await ai.models.generateContent({
         model: "gemini-3.5-flash",
@@ -228,11 +254,27 @@ Always write Yoruba with proper diacritics: subdots under e, o, s (ẹ, ọ, ṣ
 
       const normalizePrompt = `The following is a raw text fragment which contains either Yoruba with missing/broken accents and diacritics, or raw English/mixed Yoruba. 
 Please normalize it. 
+
+Strict Yoruba Language Rules to adhere to:
+1. Always write Yoruba using proper Yoruba orthography.
+2. Always include tone marks and diacritics correctly (ẹ, ọ, ṣ, à, á, è, é, ì, í, ò, ó, ù, ú). Never use flat vowels (like e or o) when subdotted/accented vowels are needed.
+3. Never remove tone marks from Yoruba text.
+4. Prioritize natural speech used by native Yoruba speakers.
+5. If a word could be ambiguous, use the correct tone marks to clarify meaning.
+6. Output Yoruba text in a format optimized for text-to-speech (TTS) systems.
+7. Use standard Yoruba as spoken in southwestern Nigeria.
+8. When translating from English to Yoruba, preserve meaning rather than translating word-for-word.
+9. If asked to read text aloud, rewrite the text with correct Yoruba diacritics.
+10. Automatically correct sentences with missing tone marks or incorrect subdots.
+
+Example Input: "Mo fe lo si ile" -> Output: "Mo fẹ́ lọ sí ilé."
+Example Input: "Bawo ni" -> Output: "Báwo ni?"
+
 Specifically:
-1. Correct the Yoruba spelling by adding standard diacritics (subdots: ẹ, ọ, ṣ; tone accents: acute (á), grave (à)) on all appropriate letters.
+1. Correct the Yoruba spelling by adding standard diacritics (subdots: ẹ, ọ, ṣ; tone accents: acute (á), grave (à)) on all appropriate letters of Yoruba words.
 2. Maintain English segments as-is if they are English. 
-3. Perform Unicode NFC normalization on the final output (ensure accents and vowels are unified compositions, not separate decomposed byte characters).
-4. Detect the primary language percentage (Yoruba vs English vs Mixed).
+3. Perform Unicode NFC normalization on the final output.
+4. Detect the primary language percentage.
 
 Input: "${text}"
 
@@ -335,7 +377,20 @@ Output a clean JSON with the keys below.`;
 
       const ai = getGeminiClient();
       const systemInstruction = `You are Jacaranda's YorubaLlama-7B, a state-of-the-art open-source 7-billion parameter language model trained natively on billions of Yoruba language tokens. 
-      Respond to the user's prompt directly in clean, authentic Yoruba. Always employ flawless Oyo/literary diacritical tone marks (ẹ, ọ, ṣ, à, á). 
+      Respond to the user's prompt directly in clean, authentic standard Yoruba of southwestern Nigeria. 
+      
+      Strict Yoruba Language Rules you MUST adhere to:
+      1. Always write Yoruba using proper Yoruba orthography.
+      2. Always include tone marks and diacritics correctly (ẹ, ọ, ṣ, à, á, è, é, ì, í, ò, ó, ù, ú). Never use flat vowels (like e or o) when subdotted/accented vowels are needed.
+      3. Never remove tone marks from Yoruba text.
+      4. Prioritize natural speech used by native Yoruba speakers.
+      5. If a word could be ambiguous, use the correct tone marks to clarify meaning.
+      6. Output Yoruba text in a format optimized for text-to-speech systems.
+      7. Use standard Yoruba as spoken in southwestern Nigeria.
+      8. When translating from English to Yoruba, preserve natural meaning rather than translating word-for-word.
+      9. If asked to read text aloud, rewrite the text with correct Yoruba diacritics.
+      10. If a sentence contains missing tone marks, automatically correct them.
+
       Demonstrate dense vocabulary, fluid grammatical structure, and natural idioms. If they ask in English, provide translation or bilingual response as appropriate. Keep the output focused, concise and impactful.`;
 
       const response = await ai.models.generateContent({
