@@ -26,7 +26,9 @@ import {
   BookOpenCheck,
   Languages,
   Check,
-  Edit2
+  Edit2,
+  Menu,
+  X
 } from "lucide-react";
 
 import {
@@ -48,6 +50,7 @@ import {
 export default function App() {
   // Router view state support: landing page vs admin console
   const [viewMode, setViewMode] = useState<"landing" | "admin">("landing");
+  const [mobileMenuOpen, setMobileMenuOpen] = useState<boolean>(false);
 
   // Navigation tabs for /admin
   const [activeTab, setActiveTab] = useState<"architecture" | "cleaning" | "dataset" | "evaluation" | "chat" | "ecosystem">("architecture");
@@ -77,6 +80,18 @@ export default function App() {
   const handleGoToLanding = () => {
     setViewMode("landing");
     window.location.hash = "/";
+  };
+
+  const scrollToSection = (id: string) => {
+    setViewMode("landing");
+    // Wait slightly to ensure we are back in landing view before seeking element
+    setTimeout(() => {
+      const element = document.getElementById(id);
+      if (element) {
+        element.scrollIntoView({ behavior: "smooth", block: "start" });
+      }
+    }, 50);
+    setMobileMenuOpen(false);
   };
 
   // Hyperparameters for Fine-Tuning LoRA
@@ -557,40 +572,155 @@ export default function App() {
             ))}
           </div>
 
-          {/* Header */}
-          <header className="border-b-[4px] border-[#5C2E0B] p-6 md:p-8 bg-[#FAF6F0] flex flex-col md:flex-row justify-between items-start md:items-center gap-6">
-            <div>
-              <div className="flex items-center gap-2 mb-2">
-                <span className="text-[10px] font-mono font-black tracking-widest uppercase bg-[#5C2E0B] text-[#FAF6F0] px-2.5 py-0.5">
-                  RESEARCH INITIATIVE
-                </span>
-                <span className="text-[10px] font-mono font-black tracking-widest uppercase bg-amber-500 text-black px-2.5 py-0.5">
-                  NIGER-CONGO BILINGUAL MVP
-                </span>
-              </div>
-              <h1 className="text-4xl md:text-6xl font-black leading-none tracking-tight uppercase text-[#3D1E04] flex items-center gap-2">
-                ÀṢÀ LLM
-              </h1>
-              <p className="font-serif italic text-lg text-[#5C2E0B]/80 mt-1">
-                Preserving Yoruba heritage, tone-composition, and linguistic correctness via open-source adapter tuning.
-              </p>
-            </div>
-            
-            <div className="flex flex-wrap gap-3">
-              <button
+          {/* Sticky Header / Responsive Navbar */}
+          <header className="sticky top-0 z-40 border-b-[4px] border-[#5C2E0B] bg-[#FAF6F0] flex flex-col transition-all duration-150">
+            {/* Primary Navbar Inner element */}
+            <div className="p-4 md:p-6 flex flex-row items-center justify-between gap-4">
+              
+              {/* Branding / Title */}
+              <div 
                 onClick={() => {
-                  window.location.hash = "#/admin";
-                  setViewMode("admin");
+                  window.scrollTo({ top: 0, behavior: "smooth" });
+                  setMobileMenuOpen(false);
                 }}
-                className="bg-[#B45309] hover:bg-[#9A3412] text-[#FAF6F0] px-5 py-2.5 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider transition-all shadow-[4px_4px_0px_#5C2E0B] active:translate-x-1 active:translate-y-1 active:shadow-[1px_1px_0px_#5C2E0B] cursor-pointer"
+                className="cursor-pointer select-none group"
               >
-                Launch Developer Console ↗
-              </button>
+                <div className="flex items-center gap-2 mb-1">
+                  <span className="text-[9px] font-mono font-black tracking-widest uppercase bg-[#5C2E0B] text-[#FAF6F0] px-2 py-0.5">
+                    RESEARCH INITIATIVE
+                  </span>
+                  <span className="hidden sm:inline-block text-[9px] font-mono font-black tracking-widest uppercase bg-amber-500 text-black px-2 py-0.5">
+                    NIGER-CONGO BILINGUAL
+                  </span>
+                </div>
+                <div className="flex items-baseline gap-2">
+                  <h1 className="text-3xl md:text-4xl font-extrabold leading-none tracking-tight uppercase text-[#3D1E04] group-hover:text-[#B45309] transition-colors">
+                    ÀṢÀ LLM
+                  </h1>
+                  <span className="text-xs font-serif italic text-[#5C2E0B]/70 hidden md:inline-block">
+                    Tone Preservation Engine
+                  </span>
+                </div>
+              </div>
+
+              {/* Desktop Mid Navigation Links */}
+              <nav className="hidden lg:flex items-center gap-1.5 font-mono text-xs font-bold text-[#5C2E0B]">
+                <button 
+                  onClick={() => scrollToSection('philosophy')}
+                  className="px-3 py-2 hover:bg-amber-100/60 border border-transparent hover:border-[#5C2E0B] transition-all cursor-pointer"
+                >
+                  📖 Philosophy
+                </button>
+                <button 
+                  onClick={() => scrollToSection('sandbox')}
+                  className="px-3 py-2 hover:bg-amber-100/60 border border-transparent hover:border-[#5C2E0B] transition-all cursor-pointer"
+                >
+                  💬 Sandbox
+                </button>
+                <button 
+                  onClick={() => scrollToSection('features')}
+                  className="px-3 py-2 hover:bg-amber-100/60 border border-transparent hover:border-[#5C2E0B] transition-all cursor-pointer"
+                >
+                  ⚡ Suite Features
+                </button>
+                <button 
+                  onClick={() => scrollToSection('roadmap')}
+                  className="px-3 py-2 hover:bg-amber-100/60 border border-transparent hover:border-[#5C2E0B] transition-all cursor-pointer"
+                >
+                  🗺️ Dev Roadmap
+                </button>
+              </nav>
+
+              {/* Desktop Console CTA and Mobile Hamburger Trigger */}
+              <div className="flex items-center gap-2">
+                
+                {/* Desktop Button */}
+                <button
+                  onClick={() => {
+                    window.location.hash = "#/admin";
+                    setViewMode("admin");
+                  }}
+                  className="hidden md:inline-flex bg-[#B45309] hover:bg-[#9A3412] text-[#FAF6F0] px-4 py-2 border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider transition-all shadow-[3px_3px_0px_#5C2E0B] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[1px_1px_0px_#5C2E0B] cursor-pointer"
+                >
+                  Developer Console ↗
+                </button>
+
+                {/* Mobile Hamburger Button */}
+                <button
+                  onClick={() => setMobileMenuOpen(!mobileMenuOpen)}
+                  aria-label="Toggle Navigation Menu"
+                  title="Toggle Navigation Menu"
+                  className="lg:hidden p-2.5 bg-amber-500 hover:bg-amber-600 text-[#3D1E04] border-2 border-[#5C2E0B] shadow-[2px_2px_0px_#5C2E0B] active:translate-x-0.5 active:translate-y-0.5 active:shadow-[0.5px_0.5px_0px_#5C2E0B] cursor-pointer"
+                >
+                  {mobileMenuOpen ? (
+                    <X className="w-5 h-5" />
+                  ) : (
+                    <Menu className="w-5 h-5" />
+                  )}
+                </button>
+
+              </div>
             </div>
+
+            {/* Mobile Expandable Navbar Drawer */}
+            {mobileMenuOpen && (
+              <div className="lg:hidden border-t-2 border-[#5C2E0B] bg-[#FDFAF5] p-4 flex flex-col gap-3 animate-fadeIn">
+                <div className="text-[10px] font-mono uppercase font-bold text-amber-800 tracking-wider mb-1 px-1">
+                  🗺️ Quick Navigation / Atúsọ̀nà:
+                </div>
+                
+                <div className="grid grid-cols-1 sm:grid-cols-2 gap-2">
+                  <button
+                    onClick={() => scrollToSection('philosophy')}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>📖 01. Philosophy</span>
+                    <span className="text-[10px] font-serif italic text-amber-700">Ìmọ̀-ìjìnlẹ̀</span>
+                  </button>
+
+                  <button
+                    onClick={() => scrollToSection('sandbox')}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>💬 02. Interactive Sandbox</span>
+                    <span className="text-[10px] font-serif italic text-amber-700">Gbọ̀ngàn</span>
+                  </button>
+
+                  <button
+                    onClick={() => scrollToSection('features')}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>⚡ 03. Suite Features</span>
+                    <span className="text-[10px] font-serif italic text-amber-700">Àwọn Ẹ̀yà</span>
+                  </button>
+
+                  <button
+                    onClick={() => scrollToSection('roadmap')}
+                    className="w-full flex items-center justify-between text-left px-4 py-3 bg-white border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-wider text-[#3D1E04] hover:bg-amber-50 cursor-pointer min-h-[48px]"
+                  >
+                    <span>🗺️ 04. Dev Roadmap</span>
+                    <span className="text-[10px] font-serif italic text-amber-700">Ọ̀nà Kíkún</span>
+                  </button>
+                </div>
+
+                <div className="border-t border-[#5C2E0B]/20 pt-3 mt-1">
+                  <button
+                    onClick={() => {
+                      setMobileMenuOpen(false);
+                      window.location.hash = "#/admin";
+                      setViewMode("admin");
+                    }}
+                    className="w-full text-center py-3 bg-[#B45309] text-[#FAF6F0] border-2 border-[#5C2E0B] text-xs font-black uppercase tracking-widest hover:bg-[#9A3412] shadow-[3px_3px_0px_#5C2E0B] cursor-pointer min-h-[48px] flex items-center justify-center gap-1"
+                  >
+                    Launch Developer Console ↗
+                  </button>
+                </div>
+              </div>
+            )}
           </header>
 
           {/* Hero Section */}
-          <div className="grid grid-cols-1 lg:grid-cols-12 divide-y-[4px] lg:divide-y-0 lg:divide-x-[4px] divide-[#5C2E0B] border-b-[4px] border-[#5C2E0B]">
+          <div id="philosophy" className="grid grid-cols-1 lg:grid-cols-12 divide-y-[4px] lg:divide-y-0 lg:divide-x-[4px] divide-[#5C2E0B] border-b-[4px] border-[#5C2E0B] scroll-mt-24">
             {/* Left side: narrative */}
             <div className="lg:col-span-7 p-6 md:p-8 bg-[#FDFAF5] flex flex-col justify-between">
               <div className="space-y-6">
@@ -646,7 +776,7 @@ export default function App() {
             </div>
 
             {/* Right side: Interactive Sandbox */}
-            <div className="lg:col-span-5 p-6 md:p-8 bg-[#FAF6F0] flex flex-col justify-between">
+            <div id="sandbox" className="lg:col-span-5 p-6 md:p-8 bg-[#FAF6F0] flex flex-col justify-between scroll-mt-24">
               <div className="border-4 border-[#5C2E0B] p-5 bg-white shadow-[6px_6px_0px_#5C2E0B] h-full flex flex-col justify-between space-y-4">
                 <div>
                   <div className="flex items-center justify-between pb-3 border-b-2 border-dashed border-[#5C2E0B]/40">
@@ -777,7 +907,7 @@ export default function App() {
           </div>
 
           {/* Current Available Features (Bento Grid) */}
-          <div className="p-6 md:p-8 bg-[#FCFAF5] border-b-[4px] border-[#5C2E0B]">
+          <div id="features" className="p-6 md:p-8 bg-[#FCFAF5] border-b-[4px] border-[#5C2E0B] scroll-mt-24">
             <div className="mb-6">
               <span className="text-xs font-mono font-bold uppercase text-amber-700">TECHNICAL SUITE</span>
               <h3 className="text-xl md:text-2xl font-black uppercase text-[#3D1E04]">
@@ -853,7 +983,7 @@ export default function App() {
           </div>
 
           {/* Startup Strategy Timeline */}
-          <div className="p-6 md:p-8 bg-[#FAF6F0] border-b-[4px] border-[#5C2E0B]">
+          <div id="roadmap" className="p-6 md:p-8 bg-[#FAF6F0] border-b-[4px] border-[#5C2E0B] scroll-mt-24">
             <div className="mb-6">
               <span className="text-xs font-mono font-bold uppercase text-amber-700">DEVELOPMENT LIFECYCLE</span>
               <h3 className="text-xl md:text-2xl font-black uppercase text-[#3D1E04]">
