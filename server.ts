@@ -465,6 +465,71 @@ Output a clean JSON with the keys below.`;
     }
   });
 
+  // 9. YarnGPT Accented Text-To-Speech API
+  app.post("/api/yarngpt/tts", async (req, res) => {
+    try {
+      const { text, apiKey: clientApiKey, endpointUrl } = req.body;
+      if (!text || !text.trim()) {
+        return res.status(400).json({ success: false, error: "Please enter text to speak." });
+      }
+
+      // Retrieve API key from body, or process.env variables
+      const apiKey = clientApiKey || process.env.YARNGPT_API_KEY || process.env.HF_API_KEY;
+      
+      if (!apiKey) {
+        return res.status(401).json({ 
+          success: false, 
+          error: "YarnGPT / HuggingFace API key is required. Please provide it in the YarnGPT controls panel or set YARNGPT_API_KEY in server secrets." 
+        });
+      }
+
+      // Default to official saheedniyi YarnGPT model serverless endpoint
+      const ttsUrl = endpointUrl || "https://api-inference.huggingface.co/models/saheedniyi/YarnGPT";
+
+      console.log(`[YarnGPT TTS Request] dispatching synthesis to ${ttsUrl} for text: "${text.substring(0, 40)}..."`);
+
+      // Invoke HuggingFace Serverless Inference API
+      const response = await fetch(ttsUrl, {
+        method: "POST",
+        headers: {
+          "Authorization": `Bearer ${apiKey}`,
+          "Content-Type": "application/json",
+        },
+        body: JSON.stringify({ inputs: text }),
+      });
+
+      if (!response.ok) {
+        const errorText = await response.text();
+        let parsedError;
+        try {
+          parsedError = JSON.parse(errorText);
+        } catch (e) {
+          parsedError = { error: errorText };
+        }
+        return res.status(response.status).json({ 
+          success: false, 
+          error: parsedError.error || `HTTP error ${response.status} from HuggingFace/YarnGPT: ${errorText}` 
+        });
+      }
+
+      const arrayBuffer = await response.arrayBuffer();
+      const buffer = Buffer.from(arrayBuffer);
+      
+      // Return audio as base64 encoded string
+      const base64Audio = buffer.toString("base64");
+      const contentType = response.headers.get("content-type") || "audio/mpeg";
+
+      res.json({
+        success: true,
+        audioData: `data:${contentType};base64,${base64Audio}`,
+        format: contentType
+      });
+    } catch (error: any) {
+      console.error("YarnGPT TTS Error:", error);
+      res.status(500).json({ success: false, error: error.message || "An error occurred during YarnGPT voice synthesis." });
+    }
+  });
+
   // Vite development server / Production static bundle router
   if (process.env.NODE_ENV !== "production") {
     // Setup Vite middleware

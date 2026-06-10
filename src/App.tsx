@@ -513,63 +513,158 @@ export default function App() {
   const [speakingText, setSpeakingText] = useState<string | null>(null);
   const [ttsText, setTtsText] = useState<string>("Báwo ni o ṣe wà lónìí? Ẹ n lẹ́ o! Ṣé àláfíà ni?");
   
+  // YarnGPT Speech Synthesis State Integration
+  const [ttsEngine, setTtsEngineState] = useState<"yarngpt" | "browser">(() => {
+    return (localStorage.getItem("yoruba_suite_tts_engine") as "yarngpt" | "browser") || "browser";
+  });
+  const [yarnGPTApiKey, setYarnGPTApiKeyState] = useState<string>(() => {
+    return localStorage.getItem("yoruba_suite_yarngpt_key") || "";
+  });
+  const [yarnGPTEndpoint, setYarnGPTEndpointState] = useState<string>(() => {
+    return localStorage.getItem("yoruba_suite_yarngpt_endpoint") || "https://api-inference.huggingface.co/models/saheedniyi/YarnGPT";
+  });
+  
+  // Custom wrappers to synchronize updates with localStorage
+  const setTtsEngine = (val: "yarngpt" | "browser") => {
+    localStorage.setItem("yoruba_suite_tts_engine", val);
+    setTtsEngineState(val);
+  };
+  const setYarnGPTApiKey = (val: string) => {
+    localStorage.setItem("yoruba_suite_yarngpt_key", val);
+    setYarnGPTApiKeyState(val);
+  };
+  const setYarnGPTEndpoint = (val: string) => {
+    localStorage.setItem("yoruba_suite_yarngpt_endpoint", val);
+    setYarnGPTEndpointState(val);
+  };
+
+  const [yarnGPTError, setYarnGPTError] = useState<string | null>(null);
+  const [isYarnGPTSynthesisLoading, setIsYarnGPTSynthesisLoading] = useState<boolean>(false);
+  const [activeAudio, setActiveAudio] = useState<HTMLAudioElement | null>(null);
+
   // Custom pronunciation sound animation waves state
   const [soundwaveActive, setSoundwaveActive] = useState<boolean>(false);
 
-  // Native Speech Synthesis player for Yoruba / phonetic sounds
-  const speakYoruba = (text: string) => {
-    if (!window.speechSynthesis) {
-      alert("Text-to-speech is not supported in this browser. Please use Chrome, Safari or Edge.");
-      return;
+  const stopActiveAudio = () => {
+    if (activeAudio) {
+      activeAudio.pause();
+      activeAudio.currentTime = 0;
+      setActiveAudio(null);
     }
-    
-    // Toggle speaking if exact same text
+  };
+
+  // Dual-mode Speech Synthesis player supporting Standard Browser Voice or advanced YarnGPT Nigerian-Accent Voice
+  const speakYoruba = async (text: string) => {
+    // Toggle speaking off if clicked on the exact same active text
     if (speakingText === text) {
-      window.speechSynthesis.cancel();
+      if (ttsEngine === "browser") {
+        if (window.speechSynthesis) window.speechSynthesis.cancel();
+      } else {
+        stopActiveAudio();
+      }
       setSpeakingText(null);
       setSoundwaveActive(false);
       return;
     }
 
-    try {
-      window.speechSynthesis.cancel();
-      setSpeakingText(text);
-      setSoundwaveActive(true);
+    // Standard safety prep: release existing synthesis and reset error flags
+    if (window.speechSynthesis) window.speechSynthesis.cancel();
+    stopActiveAudio();
+    
+    setSpeakingText(text);
+    setSoundwaveActive(true);
+    setYarnGPTError(null);
 
-      const utterance = new SpeechSynthesisUtterance(text);
-      const voices = window.speechSynthesis.getVoices();
-      
-      // Look for Yoruba or Nigerian english accent
-      const preferredVoice = voices.find(v => 
-        v.lang.toLowerCase().startsWith("yo") || 
-        v.lang.toLowerCase().includes("-ng") ||
-        v.name.toLowerCase().includes("yoruba") ||
-        v.name.toLowerCase().includes("nigeria")
-      );
-
-      if (preferredVoice) {
-        utterance.voice = preferredVoice;
-      } else {
-        // Fall back with slow rate for phonetic clarity of diacritic tone modifications
-        utterance.rate = 0.82; 
-        utterance.pitch = 1.05;
+    if (ttsEngine === "browser") {
+      if (!window.speechSynthesis) {
+        alert("Text-to-speech is not supported in this browser. Please use Chrome, Safari or Edge.");
+        setSpeakingText(null);
+        setSoundwaveActive(false);
+        return;
       }
+      try {
+        const utterance = new SpeechSynthesisUtterance(text);
+        const voices = window.speechSynthesis.getVoices();
+        
+        // Search for native Yoruba or Nigerian general english speech engine
+        const preferredVoice = voices.find(v => 
+          v.lang.toLowerCase().startsWith("yo") || 
+          v.lang.toLowerCase().includes("-ng") ||
+          v.name.toLowerCase().includes("yoruba") ||
+          v.name.toLowerCase().includes("nigeria")
+        );
 
-      utterance.onend = () => {
+        if (preferredVoice) {
+          utterance.voice = preferredVoice;
+        } else {
+          // Slow down tempo specifically to maximize clarity of diacritic tone markers
+          utterance.rate = 0.82; 
+          utterance.pitch = 1.05;
+        }
+
+        utterance.onend = () => {
+          setSpeakingText(null);
+          setSoundwaveActive(false);
+        };
+
+        utterance.onerror = () => {
+          setSpeakingText(null);
+          setSoundwaveActive(false);
+        };
+
+        window.speechSynthesis.speak(utterance);
+      } catch (err) {
+        console.error("Speech Synthesis error:", err);
         setSpeakingText(null);
         setSoundwaveActive(false);
-      };
+      }
+    } else {
+      // Advanced YarnGPT serverless inference pipeline
+      setIsYarnGPTSynthesisLoading(true);
+      try {
+        const response = await fetch("/api/yarngpt/tts", {
+          method: "POST",
+          headers: {
+            "Content-Type": "application/json",
+          },
+          body: JSON.stringify({
+            text: text,
+            apiKey: yarnGPTApiKey || undefined,
+            endpointUrl: yarnGPTEndpoint || undefined
+          })
+        });
 
-      utterance.onerror = () => {
+        const data = await response.json();
+        if (!response.ok || !data.success) {
+          throw new Error(data.error || "Failed running YarnGPT synthesis pipeline.");
+        }
+
+        const audio = new Audio(data.audioData);
+        setActiveAudio(audio);
+        
+        audio.onended = () => {
+          setSpeakingText(null);
+          setSoundwaveActive(false);
+          setActiveAudio(null);
+        };
+
+        audio.onerror = (e) => {
+          console.error("YarnGPT audio rendering context failed:", e);
+          setYarnGPTError("Audio playback failed. Please verify that the returned voice stream or API key is valid.");
+          setSpeakingText(null);
+          setSoundwaveActive(false);
+          setActiveAudio(null);
+        };
+
+        await audio.play();
+      } catch (err: any) {
+        console.error("YarnGPT endpoint network fetch error:", err);
+        setYarnGPTError(err.message || "Could not synthesize speech through YarnGPT backend. Check network parameters or your API key.");
         setSpeakingText(null);
         setSoundwaveActive(false);
-      };
-
-      window.speechSynthesis.speak(utterance);
-    } catch (err) {
-      console.error("Speech Synthesis error:", err);
-      setSpeakingText(null);
-      setSoundwaveActive(false);
+      } finally {
+        setIsYarnGPTSynthesisLoading(false);
+      }
     }
   };
 
@@ -1605,6 +1700,120 @@ export default function App() {
                           <div className="w-1 h-5 bg-black animate-scale-wave" style={{ animationDelay: '0.3s' }} />
                           <div className="w-1 h-2 bg-black animate-scale-wave" style={{ animationDelay: '0.5s' }} />
                         </div>
+                      </div>
+                    )}
+                  </div>
+
+                  {/* YarnGPT & Vocal Engine Selection Panel */}
+                  <div className="mb-6 border-4 border-[#5C2E0B] bg-white p-5 shadow-[4px_4px_0px_#5C2E0B]">
+                    <div className="flex flex-col md:flex-row md:items-center justify-between border-b-2 border-dashed border-[#5C2E0B]/35 pb-3.5 mb-4 gap-4">
+                      <div className="flex items-center gap-2">
+                        <div className="p-2 bg-amber-500 border-2 border-[#5C2E0B] text-[#3D1E04] shadow-[1.5px_1.5px_0px_#5C2E0B]">
+                          <Cpu className="w-5 h-5 animate-pulse" />
+                        </div>
+                        <div>
+                          <h4 className="text-xs font-mono font-black uppercase text-amber-800 tracking-wider">
+                            🎙️ SELECT VOCAL ENGINE PROTOCOL
+                          </h4>
+                          <p className="text-[10px] text-gray-500 uppercase font-mono font-bold">
+                            Upgrade from offline browser voices to YarnGPT's neural Yoruba accent
+                          </p>
+                        </div>
+                      </div>
+
+                      {/* Model Engine Selector */}
+                      <div className="flex gap-2">
+                        <button
+                          onClick={() => setTtsEngine("browser")}
+                          className={`px-3 py-2 border-2 border-[#5C2E0B] text-[10px] font-black uppercase tracking-wider transition-all shadow-[2.5px_2.5px_0px_#5C2E0B] active:translate-y-0.5 cursor-pointer ${
+                            ttsEngine === "browser"
+                              ? "bg-[#5C2E0B] text-white shadow-[#3D1E04]"
+                              : "bg-white hover:bg-amber-100 text-[#5C2E0B]"
+                          }`}
+                        >
+                          💻 Browser Native TTS
+                        </button>
+                        <button
+                          onClick={() => setTtsEngine("yarngpt")}
+                          className={`px-3 py-2 border-2 border-[#5C2E0B] text-[10px] font-black uppercase tracking-wider transition-all shadow-[2.5px_2.5px_0px_#5C2E0B] active:translate-y-0.5 cursor-pointer flex items-center gap-1.5 ${
+                            ttsEngine === "yarngpt"
+                              ? "bg-amber-500 text-black font-extrabold shadow-[2.5px_2.5px_0px_#3D1E04]"
+                              : "bg-white hover:bg-amber-100 text-[#5C2E0B]"
+                          }`}
+                        >
+                          🔥 YarnGPT AI Voice
+                        </button>
+                      </div>
+                    </div>
+
+                    {/* Conditional YarnGPT Config Form */}
+                    {ttsEngine === "yarngpt" && (
+                      <div className="bg-[#FFFDF4] border-2 border-dashed border-amber-600/30 p-4 space-y-4">
+                        <div className="grid grid-cols-1 md:grid-cols-2 gap-4">
+                          <div>
+                            <label className="block text-[10px] font-mono font-black uppercase text-[#522504] tracking-wider mb-1">
+                              🔑 YarnGPT / HuggingFace API Token (Oluṣe):
+                            </label>
+                            <input
+                              type="password"
+                              value={yarnGPTApiKey}
+                              onChange={(e) => setYarnGPTApiKey(e.target.value)}
+                              placeholder="Paste HF API key (e.g. hf_...) (or leave empty if YARNGPT_API_KEY is present in the server secrets)"
+                              className="w-full text-xs font-mono border-2 border-[#5C2E0B] bg-white px-3 py-2.5 placeholder-gray-400 focus:outline-[#B45309]"
+                            />
+                            <span className="text-[9px] text-[#5C2E0B] font-medium mt-1 block">
+                              🔒 Your token is securely held locally in your browser`s standard `localStorage` wrapper.
+                            </span>
+                          </div>
+
+                          <div>
+                            <label className="block text-[10px] font-mono font-black uppercase text-[#522504] tracking-wider mb-1">
+                              🌐 API Inference Endpoint:
+                            </label>
+                            <div className="flex gap-1.5">
+                              <input
+                                type="text"
+                                value={yarnGPTEndpoint}
+                                onChange={(e) => setYarnGPTEndpoint(e.target.value)}
+                                placeholder="https://api-inference.huggingface.co/models/saheedniyi/YarnGPT"
+                                className="flex-1 text-xs font-mono border-2 border-[#5C2E0B] bg-white px-3 py-2.5 placeholder-gray-400 focus:outline-[#B45309]"
+                              />
+                              <button
+                                onClick={() => setYarnGPTEndpoint("https://api-inference.huggingface.co/models/saheedniyi/YarnGPT")}
+                                className="px-2 border-2 border-[#5C2E0B] bg-amber-100 hover:bg-amber-200 text-xs font-mono font-bold cursor-pointer transition-all shadow-[1px_1px_0px_#5C2E0B] active:translate-y-0.5"
+                                title="Reset to standard YarnGPT model"
+                              >
+                                Reset
+                              </button>
+                            </div>
+                            <span className="text-[9px] text-[#5C2E0B] font-medium mt-1 block">
+                              🎯 Accesses the dedicated neural standard Nigerian and Oyo dialect phonetic voice synthetics.
+                            </span>
+                          </div>
+                        </div>
+
+                        {/* Loading State / Warning Output */}
+                        {isYarnGPTSynthesisLoading && (
+                          <div className="p-3 bg-amber-50 border border-amber-300 font-mono text-xs flex items-center gap-2 text-amber-900 animate-pulse">
+                            <span className="animate-spin text-lg">💡</span>
+                            <span>YarnGPT is currently encoding and synthesizing your standard/toned Yoruba text into local news-reader vocal packets. Please wait...</span>
+                          </div>
+                        )}
+
+                        {yarnGPTError && (
+                          <div className="p-3.5 bg-red-50 border-2 border-red-800 font-mono text-xs text-red-950 uppercase space-y-1">
+                            <div className="font-black flex items-center gap-1">
+                              <span>⚠️ VOICE PROTOCOL ERROR:</span>
+                            </div>
+                            <p className="normal-case font-bold">{yarnGPTError}</p>
+                          </div>
+                        )}
+                        
+                        {!isYarnGPTSynthesisLoading && !yarnGPTError && (
+                          <div className="flex items-center gap-1.5 text-[11px] font-mono text-emerald-800 font-bold bg-[#E6F4EA] px-3 py-1.5 border border-emerald-300 w-fit">
+                            <span>✅ Neural Yoruba voice pipeline active. Click speaking buttons below to test.</span>
+                          </div>
+                        )}
                       </div>
                     )}
                   </div>
