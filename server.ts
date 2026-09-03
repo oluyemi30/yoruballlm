@@ -530,6 +530,11 @@ Output a clean JSON with the keys below.`;
     }
   });
 
+  // Ory Domain Verification endpoint
+  app.get("/.well-known/ory-verify.txt", (req, res) => {
+    res.type("text/plain").send("ory-verify=orynth-ff50385aaa164168a56d00c3334d2273\n");
+  });
+
   // Vite development server / Production static bundle router
   if (process.env.NODE_ENV !== "production") {
     // Setup Vite middleware
